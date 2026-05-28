@@ -54,7 +54,7 @@ func (c *BibleAPIClient) Lookup(ref detector.ScriptureRef, translation string) (
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return LookupResult{}, fmt.Errorf("bible-api returned status %d: %s", resp.StatusCode, string(body))
+		return LookupResult{StatusCode: resp.StatusCode}, fmt.Errorf("bible-api returned status %d: %s", resp.StatusCode, string(body))
 	}
 
 	var apiResp bibleAPIResponse
@@ -77,6 +77,7 @@ func (c *BibleAPIClient) Lookup(ref detector.ScriptureRef, translation string) (
 		Translation: apiResp.TranslationName,
 		Verses:      verses,
 		SourceURL:   &reqURL,
+		StatusCode:  resp.StatusCode,
 	}, nil
 }
 

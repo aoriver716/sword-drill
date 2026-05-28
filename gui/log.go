@@ -1,9 +1,6 @@
 package gui
 
 import (
-	"fmt"
-	"time"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
@@ -29,8 +26,7 @@ func (sl *ScriptureLog) Widget() fyne.CanvasObject {
 
 // Append adds a scripture lookup result to the log.
 func (sl *ScriptureLog) Append(reference string, text string) {
-	timestamp := time.Now().Format("15:04:05")
-	header := widget.NewRichTextFromMarkdown(fmt.Sprintf("**[%s] %s**", timestamp, reference))
+	header := widget.NewRichTextFromMarkdown("**" + reference + "**")
 	body := widget.NewLabel(text)
 	body.Wrapping = fyne.TextWrapWord
 	sep := widget.NewSeparator()
@@ -41,4 +37,25 @@ func (sl *ScriptureLog) Append(reference string, text string) {
 
 	// Scroll to bottom
 	sl.scroll.ScrollToBottom()
+}
+
+// PlainText returns all log entries as plain text.
+func (sl *ScriptureLog) PlainText() string {
+	var result string
+	// Iterate over widgets: pattern is header, body, separator repeating
+	objects := sl.container.Objects
+	for i := 0; i+2 < len(objects); i += 3 {
+		if header, ok := objects[i].(*widget.RichText); ok {
+			result += header.String() + "\n"
+		}
+		if body, ok := objects[i+1].(*widget.Label); ok {
+			result += body.Text + "\n\n"
+		}
+	}
+	return result
+}
+
+// Clear removes all entries from the log.
+func (sl *ScriptureLog) Clear() {
+	sl.container.RemoveAll()
 }

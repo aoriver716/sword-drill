@@ -39,13 +39,23 @@ func watchClipboard(ctx context.Context, app *gui.App) {
 		if len(data) == 0 {
 			continue
 		}
+		if app.ShouldSkip() {
+			log.Println("Skipping self-triggered clipboard event")
+			continue
+		}
 		text := string(data)
 		refs := detector.ParseReferences(text)
 		for _, ref := range refs {
 			result, err := bible.Lookup(ref, cfg.DefaultTranslation)
 			if err != nil {
+				log.Printf("ERROR %s: %v", ref, err)
 				app.Log.Append(fmt.Sprintf("%s", ref), fmt.Sprintf("Error: %v", err))
 			} else {
+				if result.SourceURL != nil {
+					log.Printf("OK [%d] %s → %s", result.StatusCode, ref, *result.SourceURL)
+				} else {
+					log.Printf("OK %s (%d verses)", ref, len(result.Verses))
+				}
 				app.Log.Append(result.Reference, formatter.Format(result, fmtOpts))
 			}
 		}

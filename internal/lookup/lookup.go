@@ -18,6 +18,7 @@ type LookupResult struct {
 	Translation string
 	Verses      []Verse
 	SourceURL   *string // nil for local sources, set for remote APIs
+	StatusCode  int     // HTTP status code (0 for local sources)
 }
 
 // BibleLookup is the interface for retrieving scripture text.
