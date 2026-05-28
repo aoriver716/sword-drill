@@ -30,20 +30,27 @@ A clipboard-monitoring app that detects scripture references in copied text and 
 - [x] Define `BibleLookup` interface with `Lookup(ref, translation)` method
 - [x] Implement `BibleAPIClient` (bible-api.com) — default online provider
 - [x] Wire lookup into clipboard callback to display scripture text
+- [x] Support a translation parameter (default: KJV)
 - [ ] Add unit tests for scripture text API implementations
 - [ ] Implement local SQLite DB lookup (`BibleLookup` implementation)
 - [ ] *(Optional)* Implement API.Bible lookup (`BibleLookup` implementation)
-- [ ] Support a translation parameter (default: KJV)
 
 ### 5. GUI — Scripture Display
-- [x] Create a GUI window/overlay that listens for scripture detection events (Fyne)
+- [x] Create a GUI window that listens for scripture detection events — **Wails v2** (Go + HTML/CSS/JS)
 - [x] Query the API for each detected reference
 - [x] Display the returned scripture text in a readable format
 - [x] Handle multiple references in a single clipboard event
+- [x] Scripture Browser with tabbed chapter view and per-tab navigation (book dropdown, chapter arrows)
+- [x] Scripture Log with copy-all and clear toolbar
+- [x] Verse highlighting for referenced verses (soft blue)
+- [x] Focus existing tabs and re-highlight on duplicate references
+- [x] Draggable tab reordering
+- [x] Resizable split between browser and log panels
+- [x] Pause/resume clipboard processing toggle
 
 ### 6. Polish & Integration
-- [ ] Add tooltips to toolbar buttons (see https://github.com/dweymouth/fyne-tooltip)
-- [ ] Add custom theme (smaller toolbar icons, etc.)
-- [ ] Wire all components together end-to-end
-- [ ] Error handling and edge cases (invalid references, API failures, empty clipboard)
+- [x] Wire all components together end-to-end
+- [x] Error handling and edge cases (invalid references, API failures, empty clipboard)
+- [x] JSON config file with defaults fallback
+- [x] ScriptureDisplay interface decoupling GUI from core logic
 - [ ] System tray / background operation support
