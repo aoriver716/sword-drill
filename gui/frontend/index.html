@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sword Drill</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Scripture Browser -->
+        <div id="browser-panel">
+            <div id="tab-bar"></div>
+            <div id="tab-content">
+                <div class="placeholder">
+                    Highlight a scripture reference and press Ctrl+C to search it.
+                </div>
+            </div>
+        </div>
+
+        <!-- Resize Handle -->
+        <div id="resize-handle"></div>
+
+        <!-- Scripture Log -->
+        <div id="log-panel">
+            <div class="panel-header">
+                <span class="panel-title">Scripture Log</span>
+                <div class="toolbar">
+                    <button id="btn-copy" title="Copy All">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="5" y="5" width="9" height="9" rx="1"/>
+                            <path d="M3 11V3a1 1 0 011-1h8"/>
+                        </svg>
+                    </button>
+                    <button id="btn-clear" title="Clear">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M3 4h10M6 4V3h4v1M5 4v9h6V4"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div id="log-entries"></div>
+        </div>
+    </div>
+
+    <script src="wails/ipc.js"></script>
+    <script src="wails/runtime.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

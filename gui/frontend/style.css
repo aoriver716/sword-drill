@@ -1,0 +1,191 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    color: #333;
+    background: #fff;
+    overflow: hidden;
+    height: 100vh;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Panel headers */
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 12px;
+    background: #f0f0f0;
+    border-bottom: 1px solid #ddd;
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.panel-title {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+/* Toolbar */
+.toolbar {
+    display: flex;
+    gap: 4px;
+}
+
+.toolbar button {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 4px 6px;
+    display: flex;
+    align-items: center;
+    color: #555;
+}
+
+.toolbar button:hover {
+    background: #e0e0e0;
+    border-color: #ccc;
+}
+
+/* Browser panel */
+#browser-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 100px;
+    overflow: hidden;
+}
+
+#tab-bar {
+    display: flex;
+    background: #e8e8e8;
+    border-bottom: 1px solid #ddd;
+    overflow-x: auto;
+    flex-shrink: 0;
+}
+
+#tab-bar:empty {
+    display: none;
+}
+
+.tab {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    cursor: pointer;
+    border-right: 1px solid #ddd;
+    white-space: nowrap;
+    font-size: 13px;
+    user-select: none;
+}
+
+.tab:hover {
+    background: #d8d8d8;
+}
+
+.tab.active {
+    background: #fff;
+    border-bottom: 2px solid #4a90d9;
+}
+
+.tab .close-btn {
+    margin-left: 8px;
+    font-size: 12px;
+    color: #888;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.tab .close-btn:hover {
+    color: #333;
+}
+
+#tab-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+}
+
+.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #999;
+    font-style: italic;
+    user-select: none;
+}
+
+.tab-page {
+    display: none;
+    white-space: pre-wrap;
+    line-height: 1.6;
+    user-select: text;
+}
+
+.tab-page.active {
+    display: block;
+}
+
+/* Resize handle */
+#resize-handle {
+    height: 5px;
+    background: #e0e0e0;
+    cursor: ns-resize;
+    flex-shrink: 0;
+}
+
+#resize-handle:hover {
+    background: #c0c0c0;
+}
+
+/* Log panel */
+#log-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 100px;
+    overflow: hidden;
+}
+
+#log-entries {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 12px;
+}
+
+.log-entry {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-entry .reference {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.log-entry .text {
+    line-height: 1.6;
+    white-space: pre-wrap;
+    user-select: text;
+}
+
+.log-entry.error .text {
+    color: #c00;
+}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"log"
 
@@ -10,13 +11,21 @@ import (
 	"github.com/aoriver716/sword-drill/internal/detector"
 	"github.com/aoriver716/sword-drill/internal/formatter"
 	"github.com/aoriver716/sword-drill/internal/lookup"
+	"github.com/wailsapp/wails/v2"
+	"github.com/wailsapp/wails/v2/pkg/menu"
+	"github.com/wailsapp/wails/v2/pkg/menu/keys"
+	"github.com/wailsapp/wails/v2/pkg/options"
+	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 	"golang.design/x/clipboard"
 )
 
+//go:embed gui/frontend/*
+var assets embed.FS
+
 var (
-	cfg     config.Config
-	bible   lookup.BibleLookup
-	fmtOpts formatter.Options
+	cfg   config.Config
+	bible lookup.BibleLookup
 )
 
 func initConfig() {
@@ -27,10 +36,6 @@ func initConfig() {
 	}
 
 	bible = lookup.NewBibleAPIClient()
-	fmtOpts = formatter.Options{
-		VerseByVerse:  cfg.FormattingOptions.VerseByVerse,
-		ShowVerseNums: cfg.FormattingOptions.ShowVerseNums,
-	}
 }
 
 func watchClipboard(ctx context.Context, app *gui.App) {
@@ -45,19 +50,59 @@ func watchClipboard(ctx context.Context, app *gui.App) {
 		}
 		text := string(data)
 		refs := detector.ParseReferences(text)
+
+		type result struct {
+			ref    detector.ScriptureRef
+			lookup lookup.LookupResult
+			err    error
+		}
+		var results []result
+
 		for _, ref := range refs {
-			result, err := bible.Lookup(ref, cfg.DefaultTranslation)
+			lr, err := bible.Lookup(ref, cfg.DefaultTranslation)
 			if err != nil {
 				log.Printf("ERROR %s: %v", ref, err)
-				app.Log.Append(fmt.Sprintf("%s", ref), fmt.Sprintf("Error: %v", err))
 			} else {
-				if result.SourceURL != nil {
-					log.Printf("OK [%d] %s → %s", result.StatusCode, ref, *result.SourceURL)
+				if lr.SourceURL != nil {
+					log.Printf("OK [%d] %s → %s", lr.StatusCode, ref, *lr.SourceURL)
 				} else {
-					log.Printf("OK %s (%d verses)", ref, len(result.Verses))
+					log.Printf("OK %s (%d verses)", ref, len(lr.Verses))
 				}
-				app.Log.Append(result.Reference, formatter.Format(result, fmtOpts))
 			}
+			results = append(results, result{ref: ref, lookup: lr, err: err})
+		}
+
+		for _, r := range results {
+			if r.err != nil {
+				app.AppendLogError(fmt.Sprintf("%s", r.ref), r.err)
+			} else {
+				app.AppendLog(r.lookup)
+			}
+		}
+
+		seen := make(map[string]bool)
+		for _, r := range results {
+			if r.err != nil {
+				continue
+			}
+			tabName := fmt.Sprintf("%s %d", r.ref.Book, r.ref.StartChapter)
+			if seen[tabName] || app.HasTab(tabName) {
+				continue
+			}
+			seen[tabName] = true
+
+			chapterRef := detector.ScriptureRef{
+				Book:         r.ref.Book,
+				StartChapter: r.ref.StartChapter,
+				EndChapter:   r.ref.StartChapter,
+			}
+			chResult, err := bible.Lookup(chapterRef, cfg.DefaultTranslation)
+			if err != nil {
+				log.Printf("ERROR chapter lookup %s: %v", tabName, err)
+				continue
+			}
+			log.Printf("OK [%d] chapter %s → %s", chResult.StatusCode, tabName, *chResult.SourceURL)
+			app.OpenTab(tabName, chResult)
 		}
 	}
 }
@@ -70,12 +115,36 @@ func main() {
 		log.Fatalf("Failed to initialize clipboard: %v", err)
 	}
 
-	app := gui.New()
+	app := gui.NewApp()
+	app.SetFormatOptions(formatter.Options{
+		VerseByVerse:  cfg.FormattingOptions.VerseByVerse,
+		ShowVerseNums: cfg.FormattingOptions.ShowVerseNums,
+	})
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	appMenu := menu.NewMenu()
+	fileMenu := appMenu.AddSubmenu("File")
+	fileMenu.AddText("Quit", keys.CmdOrCtrl("q"), func(_ *menu.CallbackData) {
+		wailsRuntime.Quit(app.Ctx())
+	})
 
-	go watchClipboard(ctx, app)
+	err = wails.Run(&options.App{
+		Title:  "Sword Drill",
+		Width:  800,
+		Height: 600,
+		Menu:   appMenu,
+		AssetServer: &assetserver.Options{
+			Assets: assets,
+		},
+		OnStartup: func(ctx context.Context) {
+			app.Startup(ctx)
+			go watchClipboard(ctx, app)
+		},
+		Bind: []interface{}{
+			app,
+		},
+	})
 
-	app.Run()
+	if err != nil {
+		log.Fatalf("Wails error: %v", err)
+	}
 }
