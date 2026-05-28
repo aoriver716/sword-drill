@@ -15,8 +15,8 @@ A clipboard-monitoring app that detects scripture references in copied text and 
 - [x] Trigger a callback whenever new text is copied to the clipboard
 
 ### 3. Scripture Reference Detection
-- [ ] Build a robust regex/parser that detects scripture references in arbitrary text
-- [ ] Handle varied reference formats:
+- [x] Build a robust regex/parser that detects scripture references in arbitrary text
+- [x] Handle varied reference formats:
   - Full book names (`Genesis 1:1`, `1 Chronicles 15:10-13`)
   - Standard abbreviations (`Gen. 1:1`, `1 Chron. 15:10-13`)
   - Informal abbreviations (`Gen 1:1`, `1 Chr 15:10`)
@@ -24,7 +24,7 @@ A clipboard-monitoring app that detects scripture references in copied text and 
   - Chapter-only references (`Psalm 23`)
   - Multi-chapter ranges (`Isaiah 52:13-53:12`)
   - Multiple references in one string (`Rom. 8:28; John 3:16`)
-- [ ] Emit detected references as events (book, chapter, start verse, end verse)
+- [x] Emit detected references as events (book, chapter, start verse, end verse)
 
 ### 4. Bible Text API Integration
 - [ ] Select and integrate a Bible text API (or local data source)

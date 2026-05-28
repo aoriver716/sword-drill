@@ -16,6 +16,15 @@ func onClipboardChange(text string) {
 	fmt.Println("──────────────────────────────────")
 	fmt.Printf("[%s] Clipboard changed!\n", time.Now().Format("15:04:05"))
 	fmt.Println(text)
+
+	refs := ParseReferences(text)
+	if len(refs) == 0 {
+		fmt.Println("  (no scripture references detected)")
+	} else {
+		for _, ref := range refs {
+			fmt.Printf("  → %s\n", ref)
+		}
+	}
 	fmt.Println("──────────────────────────────────")
 }
 
