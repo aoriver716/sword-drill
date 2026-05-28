@@ -76,6 +76,7 @@ func (c *BibleAPIClient) Lookup(ref parser.ScriptureRef, translation string) (Lo
 		Reference:   apiResp.Reference,
 		Translation: apiResp.TranslationName,
 		Verses:      verses,
+		SourceURL:   &reqURL,
 	}, nil
 }
 
