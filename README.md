@@ -1,8 +1,8 @@
 # Sword Drill
 
-Don't you hate it when you're reading a great article, and they have a scripture reference, but they don't quote the scripture? Even worse, they don't even link the reference to a popular platform where you can read the text. Well, gone are those times. The Sword Drill app seeks to solve this problem in a most elegant way. Simply highligh the scripture reference and press ctrl+c. Sword Drill will automatically find the text for you. Multiple scripture references are supported too. You can even copy the entire article to get every scripture reference at once.
+__Disclaimer__: This entire project was shamelessly vibe coded.
 
-This entire project was shamelessly vibe coded, and everything that follows is not my own words (my agent might even modify this introduction at some point as the project is updated).
+Don't you hate it when you're reading a great article and the author drops a scripture reference without quoting the text — or worse, doesn't even link it? Gone are those days. Sword Drill watches your clipboard for scripture references and instantly pulls up the full text. Just highlight a reference and press Ctrl+C. It handles multiple references at once, so you can even copy an entire article and get every scripture in one shot.
 
 ## Build
 
