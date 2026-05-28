@@ -27,8 +27,12 @@ A clipboard-monitoring app that detects scripture references in copied text and 
 - [x] Emit detected references as events (book, chapter, start verse, end verse)
 
 ### 4. Bible Text API Integration
-- [ ] Select and integrate a Bible text API (or local data source)
-- [ ] Implement a lookup function: given a reference, return the scripture text
+- [x] Define `BibleLookup` interface with `Lookup(ref, translation)` method
+- [x] Implement `BibleAPIClient` (bible-api.com) — default online provider
+- [x] Wire lookup into clipboard callback to display scripture text
+- [ ] Add unit tests for scripture text API implementations
+- [ ] Implement local SQLite DB lookup (`BibleLookup` implementation)
+- [ ] *(Optional)* Implement API.Bible lookup (`BibleLookup` implementation)
 - [ ] Support a translation parameter (default: KJV)
 
 ### 5. GUI — Scripture Display

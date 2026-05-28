@@ -1,0 +1,31 @@
+package lookup
+
+import (
+	"regexp"
+	"testing"
+
+	"github.com/sword-drill/parser"
+)
+
+// RunLookupTests runs the shared test suite against any BibleLookup implementation.
+func RunLookupTests(t *testing.T, client BibleLookup) {
+	t.Run("John 3:16 KJV", func(t *testing.T) {
+		ref := parser.ScriptureRef{
+			Book:         "John",
+			StartChapter: 3,
+			StartVerse:   16,
+			EndChapter:   3,
+			EndVerse:     16,
+		}
+
+		result, err := client.Lookup(ref, "kjv")
+		if err != nil {
+			t.Fatalf("Lookup failed: %v", err)
+		}
+
+		expected := regexp.MustCompile(`(?s)^\s*For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life\.\s*$`)
+		if !expected.MatchString(result.Text) {
+			t.Errorf("Unexpected text:\n  got:  %q\n  want: match for %s", result.Text, expected.String())
+		}
+	})
+}

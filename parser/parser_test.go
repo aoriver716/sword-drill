@@ -1,4 +1,4 @@
-package main
+package parser
 
 import (
 	"testing"
@@ -9,79 +9,60 @@ func TestParseReferences(t *testing.T) {
 		input string
 		want  []ScriptureRef
 	}{
-		// Full book name with chapter:verse
 		{"Genesis 1:1", []ScriptureRef{
 			{Book: "Genesis", StartChapter: 1, StartVerse: 1, EndChapter: 1, EndVerse: 1},
 		}},
-		// Numbered book with verse range
 		{"1 Chronicles 15:10-13", []ScriptureRef{
 			{Book: "1 Chronicles", StartChapter: 15, StartVerse: 10, EndChapter: 15, EndVerse: 13},
 		}},
-		// Standard abbreviation with dot
 		{"Gen. 1:1", []ScriptureRef{
 			{Book: "Genesis", StartChapter: 1, StartVerse: 1, EndChapter: 1, EndVerse: 1},
 		}},
-		// Informal abbreviation
 		{"Gen 1:1", []ScriptureRef{
 			{Book: "Genesis", StartChapter: 1, StartVerse: 1, EndChapter: 1, EndVerse: 1},
 		}},
-		// Verse range
 		{"John 3:16-18", []ScriptureRef{
 			{Book: "John", StartChapter: 3, StartVerse: 16, EndChapter: 3, EndVerse: 18},
 		}},
-		// Chapter-only
 		{"Psalm 23", []ScriptureRef{
 			{Book: "Psalms", StartChapter: 23, StartVerse: 0, EndChapter: 23, EndVerse: 0},
 		}},
-		// Multi-chapter range
 		{"Isaiah 52:13-53:12", []ScriptureRef{
 			{Book: "Isaiah", StartChapter: 52, StartVerse: 13, EndChapter: 53, EndVerse: 12},
 		}},
-		// Multiple references separated by semicolon
 		{"Rom. 8:28; John 3:16", []ScriptureRef{
 			{Book: "Romans", StartChapter: 8, StartVerse: 28, EndChapter: 8, EndVerse: 28},
 			{Book: "John", StartChapter: 3, StartVerse: 16, EndChapter: 3, EndVerse: 16},
 		}},
-		// No reference
 		{"Hello world", nil},
-		// Reference embedded in prose
 		{"As we see in Rev. 21:4, there will be no more tears.", []ScriptureRef{
 			{Book: "Revelation", StartChapter: 21, StartVerse: 4, EndChapter: 21, EndVerse: 4},
 		}},
-		// Clipboard text with trailing newline
 		{"John 3:16-18\n", []ScriptureRef{
 			{Book: "John", StartChapter: 3, StartVerse: 16, EndChapter: 3, EndVerse: 18},
 		}},
-		// Clipboard text with CRLF
 		{"John 3:16-18\r\n", []ScriptureRef{
 			{Book: "John", StartChapter: 3, StartVerse: 16, EndChapter: 3, EndVerse: 18},
 		}},
-		// Leading/trailing whitespace
 		{"  Genesis 1:1  ", []ScriptureRef{
 			{Book: "Genesis", StartChapter: 1, StartVerse: 1, EndChapter: 1, EndVerse: 1},
 		}},
-		// En-dash verse range
 		{"John 3:16\u201318", []ScriptureRef{
 			{Book: "John", StartChapter: 3, StartVerse: 16, EndChapter: 3, EndVerse: 18},
 		}},
-		// Em-dash verse range
 		{"John 3:16\u201418", []ScriptureRef{
 			{Book: "John", StartChapter: 3, StartVerse: 16, EndChapter: 3, EndVerse: 18},
 		}},
-		// Multiple references across lines
 		{"John 3:16\nGenesis 1:1", []ScriptureRef{
 			{Book: "John", StartChapter: 3, StartVerse: 16, EndChapter: 3, EndVerse: 16},
 			{Book: "Genesis", StartChapter: 1, StartVerse: 1, EndChapter: 1, EndVerse: 1},
 		}},
-		// Numbered book abbreviation without space
 		{"1Cor 13:4-7", []ScriptureRef{
 			{Book: "1 Corinthians", StartChapter: 13, StartVerse: 4, EndChapter: 13, EndVerse: 7},
 		}},
-		// Case insensitivity
 		{"JOHN 3:16", []ScriptureRef{
 			{Book: "John", StartChapter: 3, StartVerse: 16, EndChapter: 3, EndVerse: 16},
 		}},
-		// Mixed case
 		{"jOhN 3:16", []ScriptureRef{
 			{Book: "John", StartChapter: 3, StartVerse: 16, EndChapter: 3, EndVerse: 16},
 		}},

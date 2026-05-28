@@ -1,4 +1,4 @@
-package main
+package parser
 
 import (
 	"fmt"
@@ -28,8 +28,7 @@ func (r ScriptureRef) String() string {
 	return fmt.Sprintf("%s %d:%d", r.Book, r.StartChapter, r.StartVerse)
 }
 
-// bookNames maps canonical book names to themselves plus all accepted abbreviations.
-// The map is keyed by lowercase alias → canonical name.
+// bookAliases maps lowercase alias → canonical name.
 var bookAliases map[string]string
 var refPattern *regexp.Regexp
 
@@ -119,8 +118,6 @@ func init() {
 	refPattern = buildPattern()
 }
 
-// buildPattern builds the regex used to find scripture references.
-// It sorts aliases longest-first so "1 chron." matches before "1 ch".
 func buildPattern() *regexp.Regexp {
 	aliases := make([]string, 0, len(bookAliases))
 	seen := make(map[string]bool)
@@ -130,7 +127,6 @@ func buildPattern() *regexp.Regexp {
 			seen[a] = true
 		}
 	}
-	// Sort longest first for greedy matching
 	for i := 0; i < len(aliases); i++ {
 		for j := i + 1; j < len(aliases); j++ {
 			if len(aliases[j]) > len(aliases[i]) {
@@ -138,17 +134,12 @@ func buildPattern() *regexp.Regexp {
 			}
 		}
 	}
-	// Escape dots in aliases for regex
 	escaped := make([]string, len(aliases))
 	for i, a := range aliases {
 		escaped[i] = regexp.QuoteMeta(a)
 	}
 
 	bookGroup := strings.Join(escaped, "|")
-
-	// Pattern breakdown:
-	//   (book)  chapter  :  startVerse  (- endChapter : endVerse | - endVerse)?
-	//   (book)  chapter  (chapter-only, no colon)
 	pattern := `(?i)\b(` + bookGroup + `)\s+(\d+)(?::(\d+)(?:\s*[-–—]\s*(\d+)(?::(\d+))?)?)?(?:\b|$)`
 	return regexp.MustCompile(pattern)
 }
@@ -177,11 +168,9 @@ func ParseReferences(text string) []ScriptureRef {
 		}
 
 		if num5 != 0 {
-			// multi-chapter range: e.g. 52:13-53:12
 			ref.EndChapter = num4
 			ref.EndVerse = num5
 		} else if num4 != 0 {
-			// same-chapter verse range: e.g. 3:16-18
 			ref.EndChapter = startChapter
 			ref.EndVerse = num4
 		} else {
