@@ -43,6 +43,7 @@ A clipboard-monitoring app that detects scripture references in copied text and 
 
 ### 6. Polish & Integration
 - [ ] Add tooltips to toolbar buttons (see https://github.com/dweymouth/fyne-tooltip)
+- [ ] Add custom theme (smaller toolbar icons, etc.)
 - [ ] Wire all components together end-to-end
 - [ ] Error handling and edge cases (invalid references, API failures, empty clipboard)
 - [ ] System tray / background operation support

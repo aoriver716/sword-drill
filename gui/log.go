@@ -12,7 +12,7 @@ type ScriptureLog struct {
 	scroll    *container.Scroll
 }
 
-// NewScriptureLog creates a new empty scripture log.
+// NewScriptureLog creates a new scripture log.
 func NewScriptureLog() *ScriptureLog {
 	c := container.NewVBox()
 	scroll := container.NewVScroll(c)
@@ -31,12 +31,12 @@ func (sl *ScriptureLog) Append(reference string, text string) {
 	body.Wrapping = fyne.TextWrapWord
 	sep := widget.NewSeparator()
 
-	sl.container.Add(header)
-	sl.container.Add(body)
-	sl.container.Add(sep)
-
-	// Scroll to bottom
-	sl.scroll.ScrollToBottom()
+	fyne.Do(func() {
+		sl.container.Add(header)
+		sl.container.Add(body)
+		sl.container.Add(sep)
+		sl.scroll.ScrollToBottom()
+	})
 }
 
 // PlainText returns all log entries as plain text.

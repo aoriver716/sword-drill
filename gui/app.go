@@ -50,12 +50,16 @@ func New() *App {
 				w.Clipboard().SetContent(text)
 			}
 		}),
-		widget.NewToolbarAction(theme.ContentClearIcon(), func() {
+		widget.NewToolbarAction(theme.DeleteIcon(), func() {
 			scriptureLog.Clear()
 		}),
 	)
 
-	content := container.NewBorder(toolbar, nil, nil, nil, scriptureLog.Widget())
+	title := widget.NewLabel("Scripture Log")
+	title.TextStyle = fyne.TextStyle{Bold: true}
+	headerBar := container.NewBorder(nil, nil, title, toolbar)
+
+	content := container.NewBorder(headerBar, nil, nil, nil, scriptureLog.Widget())
 
 	w.SetMainMenu(NewMenuBar(w))
 	w.SetContent(content)
