@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aoriver716/sword-drill/lookup"
+	"github.com/aoriver716/sword-drill/internal/lookup"
 )
 
 // Options controls how scripture text is formatted.

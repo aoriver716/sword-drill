@@ -1,6 +1,8 @@
 # Sword Drill
 
-A clipboard-monitoring app that detects scripture references in copied text and displays the corresponding biblical text.
+Don't you hate it when you're reading a great article, and they have a scripture reference, but they don't quote the scripture? Even worse, they don't even link the reference to a popular platform where you can read the text. Well, gone are those times. The Sword Drill app seeks to solve this problem in a most elegant way. Simply highligh the scripture reference and press ctrl+c. Sword Drill will automatically find the text for you. Multiple scripture references are supported too. You can even copy the entire article to get every scripture reference at once.
+
+This entire project was shamelessly vibe coded, and everything that follows is not my own words (my agent might even modify this introduction at some point as the project is updated).
 
 ## Build
 

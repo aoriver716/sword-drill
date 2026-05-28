@@ -4,15 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
-	"github.com/aoriver716/sword-drill/config"
-	"github.com/aoriver716/sword-drill/formatter"
-	"github.com/aoriver716/sword-drill/lookup"
-	"github.com/aoriver716/sword-drill/parser"
+	"github.com/aoriver716/sword-drill/gui"
+	"github.com/aoriver716/sword-drill/internal/config"
+	"github.com/aoriver716/sword-drill/internal/detector"
+	"github.com/aoriver716/sword-drill/internal/formatter"
+	"github.com/aoriver716/sword-drill/internal/lookup"
 	"golang.design/x/clipboard"
 )
 
@@ -36,29 +33,23 @@ func initConfig() {
 	}
 }
 
-func onClipboardChange(text string) {
-	fmt.Println("──────────────────────────────────")
-	fmt.Printf("[%s] Clipboard changed!\n", time.Now().Format("15:04:05"))
-	fmt.Println(text)
-
-	refs := parser.ParseReferences(text)
-	if len(refs) == 0 {
-		fmt.Println("  (no scripture references detected)")
-	} else {
+func watchClipboard(ctx context.Context, app *gui.App) {
+	ch := clipboard.Watch(ctx, clipboard.FmtText)
+	for data := range ch {
+		if len(data) == 0 {
+			continue
+		}
+		text := string(data)
+		refs := detector.ParseReferences(text)
 		for _, ref := range refs {
-			fmt.Printf("  → %s\n", ref)
 			result, err := bible.Lookup(ref, cfg.DefaultTranslation)
 			if err != nil {
-				fmt.Printf("    ✗ %v\n", err)
+				app.Log.Append(fmt.Sprintf("%s", ref), fmt.Sprintf("Error: %v", err))
 			} else {
-				if result.SourceURL != nil {
-					fmt.Printf("    (%s)\n", *result.SourceURL)
-				}
-				fmt.Printf("    %s\n", formatter.Format(result, fmtOpts))
+				app.Log.Append(result.Reference, formatter.Format(result, fmtOpts))
 			}
 		}
 	}
-	fmt.Println("──────────────────────────────────")
 }
 
 func main() {
@@ -69,27 +60,12 @@ func main() {
 		log.Fatalf("Failed to initialize clipboard: %v", err)
 	}
 
-	fmt.Println("Sword Drill — Clipboard Monitor")
-	fmt.Println("Watching clipboard for changes... (Ctrl+C to quit)")
+	app := gui.New()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ch := clipboard.Watch(ctx, clipboard.FmtText)
+	go watchClipboard(ctx, app)
 
-	// Graceful shutdown on Ctrl+C
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-
-	for {
-		select {
-		case data := <-ch:
-			if len(data) > 0 {
-				onClipboardChange(string(data))
-			}
-		case <-sig:
-			fmt.Println("\nShutting down.")
-			return
-		}
-	}
+	app.Run()
 }

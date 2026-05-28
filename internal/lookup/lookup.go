@@ -1,7 +1,7 @@
 package lookup
 
 import (
-	"github.com/aoriver716/sword-drill/parser"
+	"github.com/aoriver716/sword-drill/internal/detector"
 )
 
 // Verse represents a single verse returned from a lookup.
@@ -23,5 +23,5 @@ type LookupResult struct {
 // BibleLookup is the interface for retrieving scripture text.
 // Implementations may use a remote API, local database, etc.
 type BibleLookup interface {
-	Lookup(ref parser.ScriptureRef, translation string) (LookupResult, error)
+	Lookup(ref detector.ScriptureRef, translation string) (LookupResult, error)
 }

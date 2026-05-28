@@ -4,13 +4,13 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/aoriver716/sword-drill/parser"
+	"github.com/aoriver716/sword-drill/internal/detector"
 )
 
 // RunLookupTests runs the shared test suite against any BibleLookup implementation.
 func RunLookupTests(t *testing.T, client BibleLookup) {
 	t.Run("John 3:16 KJV", func(t *testing.T) {
-		ref := parser.ScriptureRef{
+		ref := detector.ScriptureRef{
 			Book:         "John",
 			StartChapter: 3,
 			StartVerse:   16,

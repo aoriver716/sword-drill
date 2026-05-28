@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/aoriver716/sword-drill/parser"
+	"github.com/aoriver716/sword-drill/internal/detector"
 )
 
 // BibleAPIClient implements BibleLookup using bible-api.com.
@@ -42,7 +42,7 @@ type bibleAPIVerse struct {
 }
 
 // Lookup fetches scripture verses from bible-api.com.
-func (c *BibleAPIClient) Lookup(ref parser.ScriptureRef, translation string) (LookupResult, error) {
+func (c *BibleAPIClient) Lookup(ref detector.ScriptureRef, translation string) (LookupResult, error) {
 	query := formatRefForAPI(ref)
 	reqURL := fmt.Sprintf("%s/%s?translation=%s", c.BaseURL, url.PathEscape(query), url.QueryEscape(translation))
 
@@ -80,7 +80,7 @@ func (c *BibleAPIClient) Lookup(ref parser.ScriptureRef, translation string) (Lo
 	}, nil
 }
 
-func formatRefForAPI(ref parser.ScriptureRef) string {
+func formatRefForAPI(ref detector.ScriptureRef) string {
 	var b strings.Builder
 	b.WriteString(ref.Book)
 	b.WriteString(fmt.Sprintf(" %d", ref.StartChapter))
