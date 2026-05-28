@@ -48,6 +48,43 @@ func TestParseReferences(t *testing.T) {
 		{"As we see in Rev. 21:4, there will be no more tears.", []ScriptureRef{
 			{Book: "Revelation", StartChapter: 21, StartVerse: 4, EndChapter: 21, EndVerse: 4},
 		}},
+		// Clipboard text with trailing newline
+		{"John 3:16-18\n", []ScriptureRef{
+			{Book: "John", StartChapter: 3, StartVerse: 16, EndChapter: 3, EndVerse: 18},
+		}},
+		// Clipboard text with CRLF
+		{"John 3:16-18\r\n", []ScriptureRef{
+			{Book: "John", StartChapter: 3, StartVerse: 16, EndChapter: 3, EndVerse: 18},
+		}},
+		// Leading/trailing whitespace
+		{"  Genesis 1:1  ", []ScriptureRef{
+			{Book: "Genesis", StartChapter: 1, StartVerse: 1, EndChapter: 1, EndVerse: 1},
+		}},
+		// En-dash verse range
+		{"John 3:16\u201318", []ScriptureRef{
+			{Book: "John", StartChapter: 3, StartVerse: 16, EndChapter: 3, EndVerse: 18},
+		}},
+		// Em-dash verse range
+		{"John 3:16\u201418", []ScriptureRef{
+			{Book: "John", StartChapter: 3, StartVerse: 16, EndChapter: 3, EndVerse: 18},
+		}},
+		// Multiple references across lines
+		{"John 3:16\nGenesis 1:1", []ScriptureRef{
+			{Book: "John", StartChapter: 3, StartVerse: 16, EndChapter: 3, EndVerse: 16},
+			{Book: "Genesis", StartChapter: 1, StartVerse: 1, EndChapter: 1, EndVerse: 1},
+		}},
+		// Numbered book abbreviation without space
+		{"1Cor 13:4-7", []ScriptureRef{
+			{Book: "1 Corinthians", StartChapter: 13, StartVerse: 4, EndChapter: 13, EndVerse: 7},
+		}},
+		// Case insensitivity
+		{"JOHN 3:16", []ScriptureRef{
+			{Book: "John", StartChapter: 3, StartVerse: 16, EndChapter: 3, EndVerse: 16},
+		}},
+		// Mixed case
+		{"jOhN 3:16", []ScriptureRef{
+			{Book: "John", StartChapter: 3, StartVerse: 16, EndChapter: 3, EndVerse: 16},
+		}},
 	}
 
 	for _, tt := range tests {
