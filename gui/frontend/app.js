@@ -4,7 +4,216 @@ let activeTab = null;
 
 const tabBar = document.getElementById("tab-bar");
 const tabContent = document.getElementById("tab-content");
+const browserToolbar = document.getElementById("browser-toolbar");
 const logEntries = document.getElementById("log-entries");
+
+// Build the browser toolbar (created once, updates per active tab)
+const bookSelect = document.createElement("select");
+bookSelect.id = "book-select";
+
+const otGroup = document.createElement("optgroup");
+otGroup.label = "Old Testament";
+const ntGroup = document.createElement("optgroup");
+ntGroup.label = "New Testament";
+const NT_START = "Matthew";
+let inNT = false;
+for (const b of BIBLE_BOOKS) {
+    if (b.name === NT_START) inNT = true;
+    const opt = document.createElement("option");
+    opt.value = b.name;
+    opt.textContent = b.name;
+    (inNT ? ntGroup : otGroup).appendChild(opt);
+}
+bookSelect.appendChild(otGroup);
+bookSelect.appendChild(ntGroup);
+
+function svgIcon(paths, w, h) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("width", w || "14");
+    svg.setAttribute("height", h || "14");
+    svg.setAttribute("viewBox", "0 0 14 14");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "1.5");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+    svg.innerHTML = paths;
+    return svg;
+}
+
+const btnFirst = document.createElement("button");
+btnFirst.title = "First chapter";
+btnFirst.appendChild(svgIcon('<path d="M3 3v8M5 7l5-4v8z"/>'));
+
+const btnPrev = document.createElement("button");
+btnPrev.title = "Previous chapter";
+btnPrev.appendChild(svgIcon('<path d="M4 7l6-4v8z"/>'));
+
+const chapterInput = document.createElement("input");
+chapterInput.type = "text";
+chapterInput.className = "chapter-input";
+
+const chapterTotal = document.createElement("span");
+chapterTotal.className = "chapter-total";
+
+const btnNext = document.createElement("button");
+btnNext.title = "Next chapter";
+btnNext.appendChild(svgIcon('<path d="M10 7l-6-4v8z"/>'));
+
+const btnLast = document.createElement("button");
+btnLast.title = "Last chapter";
+btnLast.appendChild(svgIcon('<path d="M11 3v8M9 7l-5-4v8z"/>'));
+
+browserToolbar.append(bookSelect, btnFirst, btnPrev, chapterInput, chapterTotal, btnNext, btnLast);
+
+function updateToolbarState() {
+    const tab = tabs[activeTab];
+    if (!tab) return;
+    const maxCh = BOOK_CHAPTERS[tab.book] || 1;
+    bookSelect.value = tab.book;
+    chapterInput.value = tab.chapter;
+    chapterTotal.textContent = " / " + maxCh;
+    btnFirst.disabled = tab.chapter <= 1;
+    btnPrev.disabled = tab.chapter <= 1;
+    btnNext.disabled = tab.chapter >= maxCh;
+    btnLast.disabled = tab.chapter >= maxCh;
+}
+
+async function navigateTo(book, chapter) {
+    const tab = tabs[activeTab];
+    if (!tab) return;
+    const maxCh = BOOK_CHAPTERS[book] || 1;
+    chapter = Math.max(1, Math.min(chapter, maxCh));
+
+    const newName = book + " " + chapter;
+    if (newName === activeTab) return;
+
+    // Check if a tab with that name already exists
+    if (tabs[newName]) {
+        selectTab(newName);
+        return;
+    }
+
+    try {
+        const verses = await window.go.gui.App.LoadChapter(book, chapter);
+        const oldName = activeTab;
+
+        // Rename in Go backend
+        window.go.gui.App.RenameTab(oldName, newName);
+
+        // Update tab state
+        tab.book = book;
+        tab.chapter = chapter;
+        tab.verses = verses;
+        tab.pageHeader.textContent = newName;
+        renderVerses(tab.pageBody, verses);
+        tab.tabEl.querySelector("span:first-child").textContent = newName;
+        tab.tabEl.dataset.name = newName;
+
+        // Re-key in tabs map
+        delete tabs[oldName];
+        tabs[newName] = tab;
+        activeTab = newName;
+
+        updateToolbarState();
+    } catch (err) {
+        console.error("Failed to load chapter:", err);
+    }
+}
+
+bookSelect.addEventListener("change", () => {
+    navigateTo(bookSelect.value, 1);
+});
+
+btnFirst.addEventListener("click", () => {
+    const tab = tabs[activeTab];
+    if (tab) navigateTo(tab.book, 1);
+});
+
+btnPrev.addEventListener("click", () => {
+    const tab = tabs[activeTab];
+    if (tab) navigateTo(tab.book, tab.chapter - 1);
+});
+
+btnNext.addEventListener("click", () => {
+    const tab = tabs[activeTab];
+    if (tab) navigateTo(tab.book, tab.chapter + 1);
+});
+
+btnLast.addEventListener("click", () => {
+    const tab = tabs[activeTab];
+    if (tab) {
+        const maxCh = BOOK_CHAPTERS[tab.book] || 1;
+        navigateTo(tab.book, maxCh);
+    }
+});
+
+chapterInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        const tab = tabs[activeTab];
+        if (tab) {
+            const ch = parseInt(chapterInput.value, 10);
+            if (!isNaN(ch)) navigateTo(tab.book, ch);
+        }
+    }
+});
+
+chapterInput.addEventListener("blur", () => {
+    const tab = tabs[activeTab];
+    if (tab) {
+        const ch = parseInt(chapterInput.value, 10);
+        if (!isNaN(ch) && ch !== tab.chapter) {
+            navigateTo(tab.book, ch);
+        } else {
+            chapterInput.value = tab.chapter;
+        }
+    }
+});
+
+// Verse rendering and highlighting
+let formatOpts = { verseByVerse: false, showVerseNums: false };
+
+// Fetch format options from Go backend on startup
+(async function() {
+    try {
+        formatOpts = await window.go.gui.App.GetFormatOptions();
+    } catch (e) {
+        console.error("Failed to get format options:", e);
+    }
+})();
+
+function renderVerses(container, verses) {
+    container.innerHTML = "";
+    for (let i = 0; i < verses.length; i++) {
+        const v = verses[i];
+        if (formatOpts.verseByVerse && i > 0) {
+            container.appendChild(document.createTextNode("\n"));
+        }
+        const span = document.createElement("span");
+        span.className = "verse";
+        span.dataset.verse = v.number;
+        let text = "";
+        if (formatOpts.showVerseNums) {
+            text += v.number + " ";
+        }
+        text += v.text;
+        span.textContent = text;
+        container.appendChild(span);
+    }
+}
+
+function highlightVerses(container, ranges) {
+    container.querySelectorAll(".verse.highlighted").forEach((el) =>
+        el.classList.remove("highlighted")
+    );
+    if (!ranges || ranges.length === 0) return;
+    for (const [start, end] of ranges) {
+        for (let v = start; v <= end; v++) {
+            const el = container.querySelector('.verse[data-verse="' + v + '"]');
+            if (el) el.classList.add("highlighted");
+        }
+    }
+}
 
 // Listen for log entries from Go backend
 window.runtime.EventsOn("log:append", (entry) => {
@@ -33,6 +242,11 @@ window.runtime.EventsOn("browser:openTab", (tab) => {
         selectTab(tab.name);
         return;
     }
+
+    // Parse book and chapter from tab name (e.g. "Genesis 1", "1 Chronicles 15")
+    const match = tab.name.match(/^(.+)\s+(\d+)$/);
+    const book = match ? match[1] : tab.name;
+    const chapter = match ? parseInt(match[2], 10) : 1;
 
     // Hide placeholder
     const placeholder = tabContent.querySelector(".placeholder");
@@ -97,11 +311,30 @@ window.runtime.EventsOn("browser:openTab", (tab) => {
     // Create tab content page
     const page = document.createElement("div");
     page.className = "tab-page";
-    page.textContent = tab.text;
+
+    const pageHeader = document.createElement("div");
+    pageHeader.className = "tab-page-header";
+    pageHeader.textContent = tab.name;
+
+    const pageBody = document.createElement("div");
+    pageBody.className = "tab-page-body";
+    renderVerses(pageBody, tab.verses);
+
+    page.appendChild(pageHeader);
+    page.appendChild(pageBody);
     tabContent.appendChild(page);
 
-    tabs[tab.name] = { tabEl, page };
+    tabs[tab.name] = { tabEl, page, pageHeader, pageBody, book, chapter, verses: tab.verses };
     selectTab(tab.name);
+    highlightVerses(pageBody, tab.highlight);
+});
+
+// Listen for focus+highlight events on existing tabs
+window.runtime.EventsOn("browser:focusTab", (data) => {
+    const tab = tabs[data.name];
+    if (!tab) return;
+    selectTab(data.name);
+    highlightVerses(tab.pageBody, data.highlight);
 });
 
 function selectTab(name) {
@@ -118,6 +351,8 @@ function selectTab(name) {
         tabs[name].tabEl.classList.add("active");
         tabs[name].page.classList.add("active");
         activeTab = name;
+        browserToolbar.classList.add("visible");
+        updateToolbarState();
     }
 }
 
@@ -138,6 +373,7 @@ function closeTab(name) {
         selectTab(remaining[remaining.length - 1]);
     } else {
         activeTab = null;
+        browserToolbar.classList.remove("visible");
         const placeholder = tabContent.querySelector(".placeholder");
         if (placeholder) {
             placeholder.style.display = "flex";
@@ -163,9 +399,43 @@ document.getElementById("btn-clear").addEventListener("click", () => {
     logEntries.innerHTML = "";
 });
 
+// Menu bar
+document.getElementById("menu-quit").addEventListener("click", () => {
+    window.go.gui.App.Quit();
+});
+
+// Close menu popup when clicking outside
+document.addEventListener("click", (e) => {
+    if (!e.target.closest(".menu-dropdown")) {
+        document.activeElement.blur();
+    }
+});
+
+// Ctrl+Q shortcut
+document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "q") {
+        e.preventDefault();
+        window.go.gui.App.Quit();
+    }
+});
+
 // Intercept all copy events from within the app to prevent clipboard re-processing
 document.addEventListener("copy", () => {
     window.go.gui.App.SkipNext();
+});
+
+// Pause/Play toggle
+const btnPause = document.getElementById("btn-pause");
+const iconPause = document.getElementById("icon-pause");
+const iconPlay = document.getElementById("icon-play");
+let isPaused = false;
+
+btnPause.addEventListener("click", () => {
+    isPaused = !isPaused;
+    window.go.gui.App.SetPaused(isPaused);
+    iconPause.style.display = isPaused ? "none" : "";
+    iconPlay.style.display = isPaused ? "" : "none";
+    btnPause.title = isPaused ? "Resume clipboard processing" : "Pause clipboard processing";
 });
 
 // Resizable split

@@ -12,11 +12,8 @@ import (
 	"github.com/aoriver716/sword-drill/internal/formatter"
 	"github.com/aoriver716/sword-drill/internal/lookup"
 	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/menu"
-	"github.com/wailsapp/wails/v2/pkg/menu/keys"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
-	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 	"golang.design/x/clipboard"
 )
 
@@ -43,7 +40,7 @@ func initConfig() {
 	}
 }
 
-func lookupChapter(book string, chapter int) (string, error) {
+func lookupChapter(book string, chapter int) ([]gui.ChapterVerse, error) {
 	ref := detector.ScriptureRef{
 		Book:         book,
 		StartChapter: chapter,
@@ -51,12 +48,16 @@ func lookupChapter(book string, chapter int) (string, error) {
 	}
 	result, err := bible.Lookup(ref, cfg.DefaultTranslation)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if result.SourceURL != nil {
 		log.Printf("OK [%d] chapter %s %d → %s", result.StatusCode, book, chapter, *result.SourceURL)
 	}
-	return formatter.Format(result, fmtOpts), nil
+	verses := make([]gui.ChapterVerse, len(result.Verses))
+	for i, v := range result.Verses {
+		verses[i] = gui.ChapterVerse{Number: v.Number, Text: v.Text}
+	}
+	return verses, nil
 }
 
 func watchClipboard(ctx context.Context, display gui.ScriptureDisplay) {
@@ -67,6 +68,9 @@ func watchClipboard(ctx context.Context, display gui.ScriptureDisplay) {
 		}
 		if display.ShouldSkip() {
 			log.Println("Skipping self-triggered clipboard event")
+			continue
+		}
+		if display.IsPaused() {
 			continue
 		}
 		text := string(data)
@@ -91,10 +95,12 @@ func watchClipboard(ctx context.Context, display gui.ScriptureDisplay) {
 					log.Printf("OK %s (%d verses)", ref, len(lr.Verses))
 				}
 				results = append(results, gui.ScriptureResult{
-					Reference: lr.Reference,
-					Text:      formatter.Format(lr, fmtOpts),
-					Book:      ref.Book,
-					Chapter:   ref.StartChapter,
+					Reference:  lr.Reference,
+					Text:       formatter.Format(lr, fmtOpts),
+					Book:       ref.Book,
+					Chapter:    ref.StartChapter,
+					StartVerse: ref.StartVerse,
+					EndVerse:   ref.EndVerse,
 				})
 			}
 		}
@@ -114,18 +120,15 @@ func main() {
 	}
 
 	app := gui.NewApp(lookupChapter)
-
-	appMenu := menu.NewMenu()
-	fileMenu := appMenu.AddSubmenu("File")
-	fileMenu.AddText("Quit", keys.CmdOrCtrl("q"), func(_ *menu.CallbackData) {
-		wailsRuntime.Quit(app.Ctx())
+	app.SetFormatOptions(gui.FormatOptions{
+		VerseByVerse:  cfg.FormattingOptions.VerseByVerse,
+		ShowVerseNums: cfg.FormattingOptions.ShowVerseNums,
 	})
 
 	err = wails.Run(&options.App{
 		Title:  "Sword Drill",
 		Width:  800,
 		Height: 600,
-		Menu:   appMenu,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

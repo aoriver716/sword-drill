@@ -8,9 +8,35 @@
 </head>
 <body>
     <div id="app">
+        <!-- Menu Bar -->
+        <div id="menu-bar">
+            <div id="menu-items">
+                <div class="menu-dropdown">
+                    <button class="menu-trigger">File</button>
+                    <div class="menu-popup">
+                        <button class="menu-item" id="menu-quit">Quit<span class="menu-shortcut">Ctrl+Q</span></button>
+                    </div>
+                </div>
+            </div>
+            <div id="menu-toolbar">
+                <button id="btn-pause" title="Pause clipboard processing">
+                    <svg id="icon-pause" width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                        <rect x="3" y="2" width="3" height="10" rx="0.5"/>
+                        <rect x="8" y="2" width="3" height="10" rx="0.5"/>
+                    </svg>
+                    <svg id="icon-play" width="14" height="14" viewBox="0 0 14 14" fill="currentColor" style="display:none">
+                        <path d="M3 1.5v11l9-5.5z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
         <!-- Scripture Browser -->
         <div id="browser-panel">
-            <div id="tab-bar"></div>
+            <div id="tab-bar-container">
+                <div id="tab-bar"></div>
+            </div>
+            <div id="browser-toolbar"></div>
             <div id="tab-content">
                 <div class="placeholder">
                     Highlight a scripture reference and press Ctrl+C to search it.
@@ -45,6 +71,7 @@
 
     <script src="wails/ipc.js"></script>
     <script src="wails/runtime.js"></script>
+    <script src="bible-books.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

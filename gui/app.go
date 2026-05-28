@@ -19,10 +19,23 @@ type logEntry struct {
 	IsError   bool   `json:"isError"`
 }
 
-// browserTab represents a chapter tab for the frontend.
+// browserTab represents a chapter tab event for the frontend.
 type browserTab struct {
-	Name string `json:"name"`
-	Text string `json:"text"`
+	Name      string         `json:"name"`
+	Verses    []ChapterVerse `json:"verses"`
+	Highlight [][2]int       `json:"highlight"`
+}
+
+// focusTab represents a focus+highlight event for an existing tab.
+type focusTab struct {
+	Name      string   `json:"name"`
+	Highlight [][2]int `json:"highlight"`
+}
+
+// FormatOptions controls how verses are rendered in the browser.
+type FormatOptions struct {
+	VerseByVerse  bool `json:"verseByVerse"`
+	ShowVerseNums bool `json:"showVerseNums"`
 }
 
 // App is the Wails application backend. It implements ScriptureDisplay.
@@ -32,6 +45,8 @@ type App struct {
 	openTabs      map[string]bool
 	mu            sync.Mutex
 	skipNext      bool
+	paused        bool
+	fmtOpts       FormatOptions
 }
 
 // NewApp creates a new App instance with the given chapter lookup callback.
@@ -52,6 +67,16 @@ func (a *App) Ctx() context.Context {
 	return a.ctx
 }
 
+// SetFormatOptions sets the formatting options.
+func (a *App) SetFormatOptions(opts FormatOptions) {
+	a.fmtOpts = opts
+}
+
+// GetFormatOptions returns the current formatting options (called from frontend).
+func (a *App) GetFormatOptions() FormatOptions {
+	return a.fmtOpts
+}
+
 // ShowResults displays scripture lookup results and opens chapter tabs.
 func (a *App) ShowResults(results []ScriptureResult) {
 	for _, r := range results {
@@ -63,31 +88,64 @@ func (a *App) ShowResults(results []ScriptureResult) {
 		runtime.EventsEmit(a.ctx, "log:append", entry)
 	}
 
-	seen := make(map[string]bool)
+	// Collect highlight ranges per tab
+	type tabInfo struct {
+		highlights [][2]int
+		isNew      bool
+	}
+	tabMap := make(map[string]*tabInfo)
+
 	for _, r := range results {
 		if r.IsError {
 			continue
 		}
 		tabName := fmt.Sprintf("%s %d", r.Book, r.Chapter)
-		if seen[tabName] || a.HasTab(tabName) {
+		info, exists := tabMap[tabName]
+		if !exists {
+			info = &tabInfo{isNew: !a.HasTab(tabName)}
+			tabMap[tabName] = info
+		}
+		if r.StartVerse > 0 {
+			info.highlights = append(info.highlights, [2]int{r.StartVerse, r.EndVerse})
+		}
+	}
+
+	for _, r := range results {
+		if r.IsError {
 			continue
 		}
-		seen[tabName] = true
-
-		text, err := a.chapterLookup(r.Book, r.Chapter)
-		if err != nil {
-			log.Printf("ERROR chapter lookup %s: %v", tabName, err)
+		tabName := fmt.Sprintf("%s %d", r.Book, r.Chapter)
+		info, ok := tabMap[tabName]
+		if !ok {
 			continue
 		}
 
-		a.mu.Lock()
-		a.openTabs[tabName] = true
-		a.mu.Unlock()
+		if info.isNew {
+			verses, err := a.chapterLookup(r.Book, r.Chapter)
+			if err != nil {
+				log.Printf("ERROR chapter lookup %s: %v", tabName, err)
+				delete(tabMap, tabName)
+				continue
+			}
 
-		runtime.EventsEmit(a.ctx, "browser:openTab", browserTab{
-			Name: tabName,
-			Text: text,
-		})
+			a.mu.Lock()
+			a.openTabs[tabName] = true
+			a.mu.Unlock()
+
+			runtime.EventsEmit(a.ctx, "browser:openTab", browserTab{
+				Name:      tabName,
+				Verses:    verses,
+				Highlight: info.highlights,
+			})
+		} else {
+			runtime.EventsEmit(a.ctx, "browser:focusTab", focusTab{
+				Name:      tabName,
+				Highlight: info.highlights,
+			})
+		}
+
+		// Only process each tab once
+		delete(tabMap, tabName)
 	}
 }
 
@@ -116,11 +174,39 @@ func (a *App) HasTab(name string) bool {
 	return a.openTabs[name]
 }
 
+// LoadChapter is called from the frontend to load a book/chapter.
+// Returns the structured verse data.
+func (a *App) LoadChapter(book string, chapter int) ([]ChapterVerse, error) {
+	return a.chapterLookup(book, chapter)
+}
+
+// RenameTab updates the backend tab tracking when a tab changes book/chapter.
+func (a *App) RenameTab(oldName string, newName string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	delete(a.openTabs, oldName)
+	a.openTabs[newName] = true
+}
+
 // CloseTab is called from the frontend when a tab is closed.
 func (a *App) CloseTab(name string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	delete(a.openTabs, name)
+}
+
+// SetPaused is called from the frontend to toggle clipboard processing.
+func (a *App) SetPaused(paused bool) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.paused = paused
+}
+
+// IsPaused returns true if clipboard processing is paused.
+func (a *App) IsPaused() bool {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.paused
 }
 
 // CopyText is called from the frontend to copy text to clipboard.
