@@ -6,10 +6,27 @@ This entire project was shamelessly vibe coded, and everything that follows is n
 
 ## Build
 
-Requires [Go](https://go.dev/dl/) 1.21+.
+Requires [Go](https://go.dev/dl/) 1.21+ and a C compiler (CGo is needed for the Fyne GUI toolkit).
 
+**Windows** — install [MSYS2](https://www.msys2.org/) and MinGW-w64 GCC:
 ```sh
-go build -o sword-drill.exe .
+pacman -S mingw-w64-x86_64-gcc
+```
+Then add `C:\msys64\mingw64\bin` to your PATH and set `CGO_ENABLED=1`.
+
+**Linux** — install GCC and OpenGL headers:
+```sh
+sudo apt install gcc libgl1-mesa-dev xorg-dev
+```
+
+**macOS** — install Xcode command line tools:
+```sh
+xcode-select --install
+```
+
+Build:
+```sh
+CGO_ENABLED=1 go build -o sword-drill.exe .
 ```
 
 ## Run
@@ -18,7 +35,7 @@ go build -o sword-drill.exe .
 ./sword-drill.exe
 ```
 
-Copy any text containing a scripture reference (e.g. `John 3:16`, `Gen. 1:1`, `Rom 8:28-30`) and the app will detect it, look up the text, and display it in the console. Press `Ctrl+C` to quit.
+Copy any text containing a scripture reference (e.g. `John 3:16`, `Gen. 1:1`, `Rom 8:28-30`) and the app will detect it, look up the text, and display it in the GUI window. Close the window or use File → Quit to exit.
 
 ## Configuration
 

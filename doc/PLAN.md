@@ -15,7 +15,7 @@ A clipboard-monitoring app that detects scripture references in copied text and 
 - [x] Trigger a callback whenever new text is copied to the clipboard
 
 ### 3. Scripture Reference Detection
-- [x] Build a robust regex/parser that detects scripture references in arbitrary text
+- [x] Build a robust regex/parser that detects scripture references in arbitrary text (`internal/detector`)
 - [x] Handle varied reference formats:
   - Full book names (`Genesis 1:1`, `1 Chronicles 15:10-13`)
   - Standard abbreviations (`Gen. 1:1`, `1 Chron. 15:10-13`)
@@ -36,10 +36,10 @@ A clipboard-monitoring app that detects scripture references in copied text and 
 - [ ] Support a translation parameter (default: KJV)
 
 ### 5. GUI — Scripture Display
-- [ ] Create a GUI window/overlay that listens for scripture detection events
-- [ ] Query the API for each detected reference
-- [ ] Display the returned scripture text in a readable format
-- [ ] Handle multiple references in a single clipboard event
+- [x] Create a GUI window/overlay that listens for scripture detection events (Fyne)
+- [x] Query the API for each detected reference
+- [x] Display the returned scripture text in a readable format
+- [x] Handle multiple references in a single clipboard event
 
 ### 6. Polish & Integration
 - [ ] Wire all components together end-to-end
