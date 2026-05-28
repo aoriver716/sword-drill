@@ -207,11 +207,20 @@ function highlightVerses(container, ranges) {
         el.classList.remove("highlighted")
     );
     if (!ranges || ranges.length === 0) return;
+    let firstHighlighted = null;
     for (const [start, end] of ranges) {
         for (let v = start; v <= end; v++) {
-            const el = container.querySelector('.verse[data-verse="' + v + '"]');
-            if (el) el.classList.add("highlighted");
+            const el = container.querySelector('.verse[data-verse="' + v + '"');
+            if (el) {
+                el.classList.add("highlighted");
+                if (!firstHighlighted) firstHighlighted = el;
+            }
         }
+    }
+    if (firstHighlighted) {
+        setTimeout(() => {
+            firstHighlighted.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 50);
     }
 }
 
@@ -452,14 +461,18 @@ resizeHandle.addEventListener("mousedown", (e) => {
 
 document.addEventListener("mousemove", (e) => {
     if (!isResizing) return;
-    const appHeight = document.getElementById("app").offsetHeight;
+    const appEl = document.getElementById("app");
+    const appRect = appEl.getBoundingClientRect();
+    const menuBarHeight = document.getElementById("menu-bar").offsetHeight;
     const handleHeight = resizeHandle.offsetHeight;
-    const browserHeight = e.clientY;
-    const logHeight = appHeight - browserHeight - handleHeight;
+    const availableHeight = appRect.height - menuBarHeight - handleHeight;
+    const browserHeight = e.clientY - appRect.top - menuBarHeight;
+    const logHeight = availableHeight - browserHeight;
 
     if (browserHeight >= 100 && logHeight >= 100) {
-        browserPanel.style.flex = "none";
-        browserPanel.style.height = browserHeight + "px";
+        const ratio = browserHeight / logHeight;
+        browserPanel.style.flex = String(ratio);
+        browserPanel.style.height = "";
         logPanel.style.flex = "1";
     }
 });
