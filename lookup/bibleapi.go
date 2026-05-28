@@ -41,48 +41,42 @@ type bibleAPIVerse struct {
 	Text     string `json:"text"`
 }
 
-// Lookup fetches scripture text from bible-api.com.
-func (c *BibleAPIClient) Lookup(ref parser.ScriptureRef, translation string, opts LookupOptions) (ScriptureText, error) {
+// Lookup fetches scripture verses from bible-api.com.
+func (c *BibleAPIClient) Lookup(ref parser.ScriptureRef, translation string) (LookupResult, error) {
 	query := formatRefForAPI(ref)
 	reqURL := fmt.Sprintf("%s/%s?translation=%s", c.BaseURL, url.PathEscape(query), url.QueryEscape(translation))
 
 	resp, err := c.HTTPClient.Get(reqURL)
 	if err != nil {
-		return ScriptureText{}, fmt.Errorf("bible-api request failed: %w", err)
+		return LookupResult{}, fmt.Errorf("bible-api request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return ScriptureText{}, fmt.Errorf("bible-api returned status %d: %s", resp.StatusCode, string(body))
+		return LookupResult{}, fmt.Errorf("bible-api returned status %d: %s", resp.StatusCode, string(body))
 	}
 
 	var apiResp bibleAPIResponse
 	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
-		return ScriptureText{}, fmt.Errorf("bible-api response decode failed: %w", err)
+		return LookupResult{}, fmt.Errorf("bible-api response decode failed: %w", err)
 	}
 
-	text := formatVerses(apiResp.Verses, opts)
+	verses := make([]Verse, len(apiResp.Verses))
+	for i, v := range apiResp.Verses {
+		verses[i] = Verse{
+			Book:    v.BookName,
+			Chapter: v.Chapter,
+			Number:  v.Verse,
+			Text:    v.Text,
+		}
+	}
 
-	return ScriptureText{
+	return LookupResult{
 		Reference:   apiResp.Reference,
-		Text:        text,
 		Translation: apiResp.TranslationName,
+		Verses:      verses,
 	}, nil
-}
-
-func formatVerses(verses []bibleAPIVerse, opts LookupOptions) string {
-	var b strings.Builder
-	for i, v := range verses {
-		if opts.VerseByVerse && i > 0 {
-			b.WriteString("\n")
-		}
-		if opts.ShowVerseNums {
-			b.WriteString(fmt.Sprintf("%d ", v.Verse))
-		}
-		b.WriteString(v.Text)
-	}
-	return b.String()
 }
 
 func formatRefForAPI(ref parser.ScriptureRef) string {

@@ -9,12 +9,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sword-drill/formatter"
 	"github.com/sword-drill/lookup"
 	"github.com/sword-drill/parser"
 	"golang.design/x/clipboard"
 )
 
 var bible lookup.BibleLookup = lookup.NewBibleAPIClient()
+var fmtOpts = formatter.DefaultOptions()
 
 func onClipboardChange(text string) {
 	fmt.Println("──────────────────────────────────")
@@ -27,11 +29,11 @@ func onClipboardChange(text string) {
 	} else {
 		for _, ref := range refs {
 			fmt.Printf("  → %s\n", ref)
-			result, err := bible.Lookup(ref, "kjv", lookup.DefaultOptions())
+			result, err := bible.Lookup(ref, "kjv")
 			if err != nil {
 				fmt.Printf("    ✗ %v\n", err)
 			} else {
-				fmt.Printf("    %s\n", result.Text)
+				fmt.Printf("    %s\n", formatter.Format(result, fmtOpts))
 			}
 		}
 	}
