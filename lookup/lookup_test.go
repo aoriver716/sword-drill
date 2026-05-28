@@ -18,7 +18,7 @@ func RunLookupTests(t *testing.T, client BibleLookup) {
 			EndVerse:     16,
 		}
 
-		result, err := client.Lookup(ref, "kjv")
+		result, err := client.Lookup(ref, "kjv", DefaultOptions())
 		if err != nil {
 			t.Fatalf("Lookup failed: %v", err)
 		}

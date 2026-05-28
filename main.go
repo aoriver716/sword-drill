@@ -27,7 +27,7 @@ func onClipboardChange(text string) {
 	} else {
 		for _, ref := range refs {
 			fmt.Printf("  → %s\n", ref)
-			result, err := bible.Lookup(ref, "kjv")
+			result, err := bible.Lookup(ref, "kjv", lookup.DefaultOptions())
 			if err != nil {
 				fmt.Printf("    ✗ %v\n", err)
 			} else {

@@ -42,7 +42,7 @@ type bibleAPIVerse struct {
 }
 
 // Lookup fetches scripture text from bible-api.com.
-func (c *BibleAPIClient) Lookup(ref parser.ScriptureRef, translation string) (ScriptureText, error) {
+func (c *BibleAPIClient) Lookup(ref parser.ScriptureRef, translation string, opts LookupOptions) (ScriptureText, error) {
 	query := formatRefForAPI(ref)
 	reqURL := fmt.Sprintf("%s/%s?translation=%s", c.BaseURL, url.PathEscape(query), url.QueryEscape(translation))
 
@@ -62,11 +62,27 @@ func (c *BibleAPIClient) Lookup(ref parser.ScriptureRef, translation string) (Sc
 		return ScriptureText{}, fmt.Errorf("bible-api response decode failed: %w", err)
 	}
 
+	text := formatVerses(apiResp.Verses, opts)
+
 	return ScriptureText{
 		Reference:   apiResp.Reference,
-		Text:        apiResp.Text,
+		Text:        text,
 		Translation: apiResp.TranslationName,
 	}, nil
+}
+
+func formatVerses(verses []bibleAPIVerse, opts LookupOptions) string {
+	var b strings.Builder
+	for i, v := range verses {
+		if opts.VerseByVerse && i > 0 {
+			b.WriteString("\n")
+		}
+		if opts.ShowVerseNums {
+			b.WriteString(fmt.Sprintf("%d ", v.Verse))
+		}
+		b.WriteString(v.Text)
+	}
+	return b.String()
 }
 
 func formatRefForAPI(ref parser.ScriptureRef) string {
