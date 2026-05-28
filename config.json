@@ -1,0 +1,8 @@
+{
+  "default_translation": "kjv",
+  "bible_text_api": "bible-api.com",
+  "formatting_options": {
+    "verse_by_verse": false,
+    "show_verse_nums": false
+  }
+}

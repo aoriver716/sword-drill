@@ -9,14 +9,32 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sword-drill/config"
 	"github.com/sword-drill/formatter"
 	"github.com/sword-drill/lookup"
 	"github.com/sword-drill/parser"
 	"golang.design/x/clipboard"
 )
 
-var bible lookup.BibleLookup = lookup.NewBibleAPIClient()
-var fmtOpts = formatter.DefaultOptions()
+var (
+	cfg     config.Config
+	bible   lookup.BibleLookup
+	fmtOpts formatter.Options
+)
+
+func initConfig() {
+	var err error
+	cfg, err = config.Load("config.json")
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	bible = lookup.NewBibleAPIClient()
+	fmtOpts = formatter.Options{
+		VerseByVerse:  cfg.FormattingOptions.VerseByVerse,
+		ShowVerseNums: cfg.FormattingOptions.ShowVerseNums,
+	}
+}
 
 func onClipboardChange(text string) {
 	fmt.Println("──────────────────────────────────")
@@ -29,7 +47,7 @@ func onClipboardChange(text string) {
 	} else {
 		for _, ref := range refs {
 			fmt.Printf("  → %s\n", ref)
-			result, err := bible.Lookup(ref, "kjv")
+			result, err := bible.Lookup(ref, cfg.DefaultTranslation)
 			if err != nil {
 				fmt.Printf("    ✗ %v\n", err)
 			} else {
@@ -41,6 +59,8 @@ func onClipboardChange(text string) {
 }
 
 func main() {
+	initConfig()
+
 	err := clipboard.Init()
 	if err != nil {
 		log.Fatalf("Failed to initialize clipboard: %v", err)
