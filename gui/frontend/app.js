@@ -65,6 +65,31 @@ window.runtime.EventsOn("browser:openTab", (tab) => {
         }
     });
 
+    // Drag-and-drop reordering
+    tabEl.draggable = true;
+    tabEl.addEventListener("dragstart", (e) => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", tab.name);
+        tabEl.classList.add("dragging");
+    });
+    tabEl.addEventListener("dragend", () => {
+        tabEl.classList.remove("dragging");
+    });
+    tabEl.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        const dragging = tabBar.querySelector(".tab.dragging");
+        if (dragging && dragging !== tabEl) {
+            const rect = tabEl.getBoundingClientRect();
+            const mid = rect.left + rect.width / 2;
+            if (e.clientX < mid) {
+                tabBar.insertBefore(dragging, tabEl);
+            } else {
+                tabBar.insertBefore(dragging, tabEl.nextSibling);
+            }
+        }
+    });
+
     tabEl.appendChild(label);
     tabEl.appendChild(closeBtn);
     tabBar.appendChild(tabEl);

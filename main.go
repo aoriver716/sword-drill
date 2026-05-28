@@ -24,8 +24,9 @@ import (
 var assets embed.FS
 
 var (
-	cfg   config.Config
-	bible lookup.BibleLookup
+	cfg     config.Config
+	bible   lookup.BibleLookup
+	fmtOpts formatter.Options
 )
 
 func initConfig() {
@@ -36,73 +37,70 @@ func initConfig() {
 	}
 
 	bible = lookup.NewBibleAPIClient()
+	fmtOpts = formatter.Options{
+		VerseByVerse:  cfg.FormattingOptions.VerseByVerse,
+		ShowVerseNums: cfg.FormattingOptions.ShowVerseNums,
+	}
 }
 
-func watchClipboard(ctx context.Context, app *gui.App) {
+func lookupChapter(book string, chapter int) (string, error) {
+	ref := detector.ScriptureRef{
+		Book:         book,
+		StartChapter: chapter,
+		EndChapter:   chapter,
+	}
+	result, err := bible.Lookup(ref, cfg.DefaultTranslation)
+	if err != nil {
+		return "", err
+	}
+	if result.SourceURL != nil {
+		log.Printf("OK [%d] chapter %s %d → %s", result.StatusCode, book, chapter, *result.SourceURL)
+	}
+	return formatter.Format(result, fmtOpts), nil
+}
+
+func watchClipboard(ctx context.Context, display gui.ScriptureDisplay) {
 	ch := clipboard.Watch(ctx, clipboard.FmtText)
 	for data := range ch {
 		if len(data) == 0 {
 			continue
 		}
-		if app.ShouldSkip() {
+		if display.ShouldSkip() {
 			log.Println("Skipping self-triggered clipboard event")
 			continue
 		}
 		text := string(data)
 		refs := detector.ParseReferences(text)
 
-		type result struct {
-			ref    detector.ScriptureRef
-			lookup lookup.LookupResult
-			err    error
-		}
-		var results []result
-
+		var results []gui.ScriptureResult
 		for _, ref := range refs {
 			lr, err := bible.Lookup(ref, cfg.DefaultTranslation)
 			if err != nil {
 				log.Printf("ERROR %s: %v", ref, err)
+				results = append(results, gui.ScriptureResult{
+					Reference: fmt.Sprintf("%s", ref),
+					Text:      fmt.Sprintf("Error: %v", err),
+					Book:      ref.Book,
+					Chapter:   ref.StartChapter,
+					IsError:   true,
+				})
 			} else {
 				if lr.SourceURL != nil {
 					log.Printf("OK [%d] %s → %s", lr.StatusCode, ref, *lr.SourceURL)
 				} else {
 					log.Printf("OK %s (%d verses)", ref, len(lr.Verses))
 				}
-			}
-			results = append(results, result{ref: ref, lookup: lr, err: err})
-		}
-
-		for _, r := range results {
-			if r.err != nil {
-				app.AppendLogError(fmt.Sprintf("%s", r.ref), r.err)
-			} else {
-				app.AppendLog(r.lookup)
+				results = append(results, gui.ScriptureResult{
+					Reference: lr.Reference,
+					Text:      formatter.Format(lr, fmtOpts),
+					Book:      ref.Book,
+					Chapter:   ref.StartChapter,
+				})
 			}
 		}
 
-		seen := make(map[string]bool)
-		for _, r := range results {
-			if r.err != nil {
-				continue
-			}
-			tabName := fmt.Sprintf("%s %d", r.ref.Book, r.ref.StartChapter)
-			if seen[tabName] || app.HasTab(tabName) {
-				continue
-			}
-			seen[tabName] = true
-
-			chapterRef := detector.ScriptureRef{
-				Book:         r.ref.Book,
-				StartChapter: r.ref.StartChapter,
-				EndChapter:   r.ref.StartChapter,
-			}
-			chResult, err := bible.Lookup(chapterRef, cfg.DefaultTranslation)
-			if err != nil {
-				log.Printf("ERROR chapter lookup %s: %v", tabName, err)
-				continue
-			}
-			log.Printf("OK [%d] chapter %s → %s", chResult.StatusCode, tabName, *chResult.SourceURL)
-			app.OpenTab(tabName, chResult)
+		if len(results) > 0 {
+			display.ShowResults(results)
 		}
 	}
 }
@@ -115,11 +113,7 @@ func main() {
 		log.Fatalf("Failed to initialize clipboard: %v", err)
 	}
 
-	app := gui.NewApp()
-	app.SetFormatOptions(formatter.Options{
-		VerseByVerse:  cfg.FormattingOptions.VerseByVerse,
-		ShowVerseNums: cfg.FormattingOptions.ShowVerseNums,
-	})
+	app := gui.NewApp(lookupChapter)
 
 	appMenu := menu.NewMenu()
 	fileMenu := appMenu.AddSubmenu("File")
