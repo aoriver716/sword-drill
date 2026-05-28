@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/sword-drill/parser"
+	"github.com/aoriver716/sword-drill/parser"
 )
 
 // BibleAPIClient implements BibleLookup using bible-api.com.

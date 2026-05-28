@@ -1,7 +1,7 @@
 package lookup
 
 import (
-	"github.com/sword-drill/parser"
+	"github.com/aoriver716/sword-drill/parser"
 )
 
 // Verse represents a single verse returned from a lookup.

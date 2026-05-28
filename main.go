@@ -9,10 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/sword-drill/config"
-	"github.com/sword-drill/formatter"
-	"github.com/sword-drill/lookup"
-	"github.com/sword-drill/parser"
+	"github.com/aoriver716/sword-drill/config"
+	"github.com/aoriver716/sword-drill/formatter"
+	"github.com/aoriver716/sword-drill/lookup"
+	"github.com/aoriver716/sword-drill/parser"
 	"golang.design/x/clipboard"
 )
 

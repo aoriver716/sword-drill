@@ -1,4 +1,4 @@
-module github.com/sword-drill
+module github.com/aoriver716/sword-drill
 
 go 1.26.3
 

@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/sword-drill/parser"
+	"github.com/aoriver716/sword-drill/parser"
 )
 
 // RunLookupTests runs the shared test suite against any BibleLookup implementation.
