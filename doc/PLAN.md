@@ -54,3 +54,12 @@ A clipboard-monitoring app that detects scripture references in copied text and 
 - [x] JSON config file with defaults fallback
 - [x] ScriptureDisplay interface decoupling GUI from core logic
 - [ ] System tray / background operation support
+
+### 7. Future Enhancements
+- [ ] Preferences menu (formatting options, translation, theme)
+- [ ] Session persistence (save/restore open tabs and panel layout on restart)
+- [ ] Reopen closed tabs with Ctrl+Shift+T
+- [ ] User highlighting in Scripture Browser (select text to highlight with custom colors)
+- [ ] Annotations in Scripture Browser (attach notes to verses)
+- [ ] Cross-reference and footnote support
+- [ ] Dark mode option
