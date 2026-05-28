@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
-	"log/slog"
+	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/sword-drill/config"
 	"github.com/sword-drill/formatter"
@@ -24,8 +26,7 @@ func initConfig() {
 	var err error
 	cfg, err = config.Load("config.json")
 	if err != nil {
-		slog.Error("Failed to load config", "error", err)
-		os.Exit(1)
+		log.Fatalf("Failed to load config: %v", err)
 	}
 
 	bible = lookup.NewBibleAPIClient()
@@ -36,49 +37,40 @@ func initConfig() {
 }
 
 func onClipboardChange(text string) {
-	slog.Info("Clipboard changed", "text", text)
+	fmt.Println("──────────────────────────────────")
+	fmt.Printf("[%s] Clipboard changed!\n", time.Now().Format("15:04:05"))
+	fmt.Println(text)
 
 	refs := parser.ParseReferences(text)
 	if len(refs) == 0 {
-		slog.Debug("No scripture references detected")
-		return
+		fmt.Println("  (no scripture references detected)")
+	} else {
+		for _, ref := range refs {
+			fmt.Printf("  → %s\n", ref)
+			result, err := bible.Lookup(ref, cfg.DefaultTranslation)
+			if err != nil {
+				fmt.Printf("    ✗ %v\n", err)
+			} else {
+				if result.SourceURL != nil {
+					fmt.Printf("    (%s)\n", *result.SourceURL)
+				}
+				fmt.Printf("    %s\n", formatter.Format(result, fmtOpts))
+			}
+		}
 	}
-
-	for _, ref := range refs {
-		slog.Info("Scripture reference detected", "reference", ref.String())
-
-		result, err := bible.Lookup(ref, cfg.DefaultTranslation)
-		if err != nil {
-			slog.Error("Lookup failed", "reference", ref.String(), "error", err)
-			continue
-		}
-
-		attrs := []any{
-			"reference", result.Reference,
-			"translation", result.Translation,
-			"text", formatter.Format(result, fmtOpts),
-		}
-		if result.SourceURL != nil {
-			attrs = append(attrs, "source_url", *result.SourceURL)
-		}
-		slog.Info("Scripture text retrieved", attrs...)
-	}
+	fmt.Println("──────────────────────────────────")
 }
 
 func main() {
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	})))
-
 	initConfig()
 
 	err := clipboard.Init()
 	if err != nil {
-		slog.Error("Failed to initialize clipboard", "error", err)
-		os.Exit(1)
+		log.Fatalf("Failed to initialize clipboard: %v", err)
 	}
 
-	slog.Info("Sword Drill started", "translation", cfg.DefaultTranslation, "api", cfg.BibleTextAPI)
+	fmt.Println("Sword Drill — Clipboard Monitor")
+	fmt.Println("Watching clipboard for changes... (Ctrl+C to quit)")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -96,7 +88,7 @@ func main() {
 				onClipboardChange(string(data))
 			}
 		case <-sig:
-			slog.Info("Shutting down")
+			fmt.Println("\nShutting down.")
 			return
 		}
 	}
