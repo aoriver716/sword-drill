@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows/amd64
+            artifact: sword-drill-windows-amd64.exe
+          - os: macos-latest
+            platform: darwin/universal
+            artifact: sword-drill-macos-universal.app.zip
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Build (Windows)
+        if: matrix.os == 'windows-latest'
+        run: wails build -platform ${{ matrix.platform }} -o sword-drill.exe
+
+      - name: Rename Windows artifact
+        if: matrix.os == 'windows-latest'
+        run: |
+          Copy-Item "build\bin\sword-drill.exe" "${{ matrix.artifact }}"
+
+      - name: Build (macOS)
+        if: matrix.os == 'macos-latest'
+        run: wails build -platform ${{ matrix.platform }}
+
+      - name: Zip macOS app bundle
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd build/bin
+          zip -r "../../${{ matrix.artifact }}" *.app
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
