@@ -16,6 +16,8 @@
                     <div class="menu-popup">
                         <button class="menu-item" id="menu-new-tab">New Tab<span class="menu-shortcut">Ctrl+N</span></button>
                         <hr class="menu-separator">
+                        <button class="menu-item" id="menu-preferences">Preferences…</button>
+                        <hr class="menu-separator">
                         <button class="menu-item" id="menu-quit">Quit<span class="menu-shortcut">Ctrl+Q</span></button>
                     </div>
                 </div>
@@ -70,6 +72,23 @@
             </div>
             <div id="log-entries"></div>
         </div>
+
+        <!-- Preferences Dialog -->
+        <dialog id="prefs-dialog" class="prefs-dialog">
+            <div class="prefs-header">
+                <span class="prefs-title">Preferences</span>
+                <button id="prefs-close" class="prefs-close-btn">&times;</button>
+            </div>
+            <div id="prefs-body" class="prefs-body"></div>
+            <div class="prefs-footer">
+                <button id="prefs-reset" class="prefs-btn">Reset to Defaults</button>
+                <div class="prefs-footer-right">
+                    <button id="prefs-ok" class="prefs-btn prefs-btn-primary">OK</button>
+                    <button id="prefs-cancel" class="prefs-btn">Cancel</button>
+                    <button id="prefs-apply" class="prefs-btn">Apply</button>
+                </div>
+            </div>
+        </dialog>
     </div>
 
     <script src="wails/ipc.js"></script>

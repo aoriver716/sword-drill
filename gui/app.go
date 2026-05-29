@@ -83,6 +83,18 @@ func (a *App) ResetConfigToDefaults() error {
 	return a.registry.ResetToDefaults()
 }
 
+// RefreshTranslations refreshes the translation list from the current Bible API.
+func (a *App) RefreshTranslations() error {
+	if a.registry == nil {
+		return nil
+	}
+	bible := a.registry.BibleLookup()
+	if bible == nil {
+		return nil
+	}
+	return bible.RefreshTranslations()
+}
+
 // Startup is called when the Wails app starts.
 func (a *App) Startup(ctx context.Context) {
 	a.ctx = ctx
