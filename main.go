@@ -110,14 +110,9 @@ func watchClipboard(ctx context.Context, display gui.ScriptureDisplay) {
 func main() {
 	initConfig()
 
-	err := clipboard.Init()
-	if err != nil {
-		log.Fatalf("Failed to initialize clipboard: %v", err)
-	}
-
 	app := gui.NewApp(lookupChapter, registry)
 
-	err = wails.Run(&options.App{
+	err := wails.Run(&options.App{
 		Title:  "Sword Drill",
 		Width:  800,
 		Height: 600,
@@ -126,6 +121,14 @@ func main() {
 		},
 		OnStartup: func(ctx context.Context) {
 			app.Startup(ctx)
+
+			// Initialize clipboard after the application event loop is running.
+			// On macOS, clipboard access requires the NSApplication loop which
+			// Wails sets up before calling OnStartup.
+			if err := clipboard.Init(); err != nil {
+				log.Printf("WARNING: clipboard init failed: %v", err)
+				return
+			}
 			go watchClipboard(ctx, app)
 		},
 		OnBeforeClose: app.BeforeClose,
