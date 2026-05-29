@@ -311,6 +311,7 @@ func (r *Registry) Update(key string, value any) error {
 			for _, p := range r.providers {
 				if p.Key == newAPI {
 					r.pending["default_translation"] = p.DefaultTranslation
+					r.pending["parallel_translation"] = p.DefaultTranslation
 					break
 				}
 			}

@@ -40,10 +40,12 @@ type focusTab struct {
 // TabStateEntry describes a single tab for persistence.
 // Array order encodes position; closed tabs include a Position hint for reopening.
 type TabStateEntry struct {
-	Book        string `json:"book"`
-	Chapter     int    `json:"chapter"`
-	Translation string `json:"translation"`
-	Position    int    `json:"position,omitempty"`
+	Book                string `json:"book"`
+	Chapter             int    `json:"chapter"`
+	Translation         string `json:"translation"`
+	ParallelMode        bool   `json:"parallelMode,omitempty"`
+	ParallelTranslation string `json:"parallelTranslation,omitempty"`
+	Position            int    `json:"position,omitempty"`
 }
 
 // TabsFile is the on-disk format for tab persistence.
@@ -282,6 +284,14 @@ func (a *App) GetDefaultTranslation() string {
 		return ""
 	}
 	return a.registry.Config().DefaultTranslation
+}
+
+// GetParallelTranslation returns the currently configured parallel translation key.
+func (a *App) GetParallelTranslation() string {
+	if a.registry == nil {
+		return ""
+	}
+	return a.registry.Config().ParallelTranslation
 }
 
 // RenameTab updates the backend tab tracking when a tab changes book/chapter.
