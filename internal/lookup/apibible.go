@@ -284,7 +284,7 @@ func (c *APIBibleClient) Translations() ([]Translation, error) {
 
 // RefreshTranslations fetches available Bibles from API.Bible and caches them locally.
 func (c *APIBibleClient) RefreshTranslations() error {
-	reqURL := fmt.Sprintf("%s/bibles", c.BaseURL)
+	reqURL := fmt.Sprintf("%s/bibles?language=eng", c.BaseURL)
 	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
 		return fmt.Errorf("api.bible translations request build failed: %w", err)
@@ -307,9 +307,6 @@ func (c *APIBibleClient) RefreshTranslations() error {
 			ID           string `json:"id"`
 			Name         string `json:"name"`
 			Abbreviation string `json:"abbreviation"`
-			Language     struct {
-				Name string `json:"name"`
-			} `json:"language"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
@@ -318,11 +315,7 @@ func (c *APIBibleClient) RefreshTranslations() error {
 
 	translations := make([]Translation, len(apiResp.Data))
 	for i, b := range apiResp.Data {
-		name := b.Name
-		if b.Language.Name != "" && b.Language.Name != "English" {
-			name = fmt.Sprintf("%s (%s)", b.Name, b.Language.Name)
-		}
-		translations[i] = Translation{Name: name, Key: b.ID}
+		translations[i] = Translation{Name: b.Name, Key: b.ID}
 	}
 
 	data, err := json.MarshalIndent(translations, "", "  ")

@@ -55,33 +55,11 @@ Copy any text containing a scripture reference (e.g. `John 3:16`, `Gen. 1:1`, `R
 
 Close the window or use File → Quit (Ctrl+Q) to exit.
 
-## Configuration
-
-Settings are read from `config.json` in the working directory. If the file doesn't exist, defaults are used.
-
-```json
-{
-  "default_translation": "kjv",
-  "bible_text_api": "api.bible",
-  "formatting_options": {
-    "verse_by_verse": false,
-    "show_verse_nums": false
-  }
-}
-```
-
-| Key | Description | Default |
-|---|---|---|
-| `default_translation` | Bible translation ID (e.g. `kjv`, `web`) | `kjv` |
-| `bible_text_api` | API source: `bible-api.com` or `api.bible` | `bible-api.com` |
-| `formatting_options.verse_by_verse` | Display each verse on its own line | `false` |
-| `formatting_options.show_verse_nums` | Prefix each verse with its number | `false` |
-
 ### API.Bible Setup
 
-Official releases come pre-compiled with an API.Bible key — no setup needed.
+Sword Drill uses API.Bible among its bible API's, which requires an API key. Official releases come pre-compiled with an API.Bible key — no setup needed.
 
-If you're building from source and want to use [API.Bible](https://scripture.api.bible) (2,500+ translations), sign up at [api.bible/sign-up](https://api.bible/sign-up) for a free API key, then build with:
+However, if you're building from source and want to use [API.Bible](https://scripture.api.bible) (2,500+ translations), sign up at [api.bible/sign-up](https://api.bible/sign-up) for a free API key, then build with:
 
 ```sh
 CGO_ENABLED=1 go build -tags "desktop,production" -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=your-key" -o sword-drill.exe .
