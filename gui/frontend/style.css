@@ -748,3 +748,69 @@ body {
 .prefs-btn-primary:hover {
     background: #3a7bc8;
 }
+
+/* About Dialog */
+.about-dialog {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    width: 360px;
+    padding: 0;
+    margin: auto;
+}
+
+.about-dialog[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+.about-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.about-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.about-title {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.about-body {
+    padding: 20px 18px;
+    text-align: center;
+}
+
+.about-version {
+    margin-bottom: 16px;
+    color: #555;
+}
+
+.about-update-status {
+    margin-bottom: 12px;
+    font-size: 13px;
+    min-height: 20px;
+}
+
+.about-update-status.update-available {
+    color: #2a7b2a;
+    font-weight: 500;
+}
+
+.about-update-status.update-current {
+    color: #555;
+}
+
+.about-update-status.update-error {
+    color: #c44;
+}
+
+.about-update-status a {
+    color: #4a90d9;
+    text-decoration: underline;
+}

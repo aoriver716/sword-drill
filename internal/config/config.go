@@ -13,4 +13,5 @@ type Config struct {
 	BibleTextAPI        string            `json:"bible_text_api"`
 	FormattingOptions   FormattingOptions `json:"formatting_options"`
 	TabOpenBehavior     string            `json:"tab_open_behavior"`
+	CheckForUpdates     bool              `json:"check_for_updates"`
 }

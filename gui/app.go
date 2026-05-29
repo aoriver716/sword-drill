@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 
 	"github.com/aoriver716/sword-drill/internal/config"
+	"github.com/aoriver716/sword-drill/internal/updater"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -374,4 +375,22 @@ func (a *App) LoadTabState() *TabsFile {
 		return nil
 	}
 	return &state
+}
+
+// CheckForUpdates queries GitHub for the latest release and returns update info.
+func (a *App) CheckForUpdates() updater.UpdateInfo {
+	return updater.CheckForUpdates()
+}
+
+// GetVersion returns the current application version.
+func (a *App) GetVersion() string {
+	return updater.Version
+}
+
+// ShouldCheckForUpdates returns whether auto-update check is enabled.
+func (a *App) ShouldCheckForUpdates() bool {
+	if a.registry == nil {
+		return false
+	}
+	return a.registry.Config().CheckForUpdates
 }
