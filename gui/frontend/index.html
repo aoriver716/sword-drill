@@ -14,11 +14,11 @@
                 <div class="menu-dropdown">
                     <button class="menu-trigger">File</button>
                     <div class="menu-popup">
-                        <button class="menu-item" id="menu-new-tab">New Tab<span class="menu-shortcut">Ctrl+N</span></button>
+                        <button class="menu-item" id="menu-new-tab">New Tab<span class="menu-shortcut" data-shortcut="n"></span></button>
                         <hr class="menu-separator">
                         <button class="menu-item" id="menu-preferences">Preferences…</button>
                         <hr class="menu-separator">
-                        <button class="menu-item" id="menu-quit">Quit<span class="menu-shortcut">Ctrl+Q</span></button>
+                        <button class="menu-item" id="menu-quit">Quit<span class="menu-shortcut" data-shortcut="q"></span></button>
                     </div>
                 </div>
             </div>
@@ -45,7 +45,7 @@
                                 </svg>
                             </button>
                         </div>
-                        <span class="hint-label">Select the above text and press <kbd>Ctrl + C</kbd></span>
+                        <span class="hint-label">Select the above text and press <kbd data-shortcut="c"></kbd></span>
                     </div>
                 </div>
             </div>
@@ -108,6 +108,7 @@
     <script src="wails/ipc.js"></script>
     <script src="wails/runtime.js"></script>
     <script src="bible-books.js"></script>
+    <script src="keybinds.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
