@@ -2,6 +2,7 @@
 const tabs = {};
 let activeTab = null;
 let nextTabId = 1;
+const closedTabStack = [];
 
 const tabBar = document.getElementById("tab-bar");
 const tabContent = document.getElementById("tab-content");
@@ -71,6 +72,8 @@ translationSelect.title = "Translation";
 
 // Populate translation selector from Go backend
 let translationOptions = [];
+let translationsReady;
+const translationsLoaded = new Promise(resolve => { translationsReady = resolve; });
 (async function() {
     try {
         translationOptions = await window.go.gui.App.GetTranslations() || [];
@@ -78,6 +81,7 @@ let translationOptions = [];
     } catch (e) {
         console.error("Failed to get translations:", e);
     }
+    translationsReady();
 })();
 
 function populateTranslationSelect() {
@@ -422,6 +426,18 @@ function closeTab(id) {
     const tab = tabs[id];
     if (!tab) return;
 
+    // Record position before removing
+    const tabEls = Array.from(tabBar.children);
+    const position = tabEls.indexOf(tab.tabEl);
+
+    // Push to closed stack
+    closedTabStack.push({
+        book: tab.book,
+        chapter: tab.chapter,
+        translation: tab.translation,
+        position: position,
+    });
+
     tab.tabEl.remove();
     tab.page.remove();
     delete tabs[id];
@@ -490,7 +506,7 @@ document.getElementById("menu-preferences").addEventListener("click", () => {
 
 document.getElementById("menu-quit").addEventListener("click", () => {
     document.activeElement.blur();
-    window.go.gui.App.Quit();
+    saveAndQuit();
 });
 
 // Close menu popup when clicking outside
@@ -504,7 +520,7 @@ document.addEventListener("click", (e) => {
 document.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "q") {
         e.preventDefault();
-        window.go.gui.App.Quit();
+        saveAndQuit();
     }
     if ((e.ctrlKey || e.metaKey) && e.key === "n") {
         e.preventDefault();
@@ -513,6 +529,10 @@ document.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "w") {
         e.preventDefault();
         if (activeTab != null) closeTab(activeTab);
+    }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "T") {
+        e.preventDefault();
+        reopenClosedTab();
     }
 });
 
@@ -766,3 +786,134 @@ function createControl(field) {
             return null;
     }
 }
+
+// --- Tab Persistence ---
+
+// Get the ordered list of open tabs as state entries.
+function getOpenTabState() {
+    const tabEls = Array.from(tabBar.children);
+    const entries = [];
+    for (let i = 0; i < tabEls.length; i++) {
+        const tabId = Number(tabEls[i].dataset.tabId);
+        const tab = tabs[tabId];
+        if (!tab) continue;
+        entries.push({
+            book: tab.book,
+            chapter: tab.chapter,
+            translation: tab.translation,
+            position: i,
+        });
+    }
+    return entries;
+}
+
+// Get the index of the active tab in DOM order.
+function getActiveTabIndex() {
+    if (activeTab == null) return -1;
+    const tab = tabs[activeTab];
+    if (!tab) return -1;
+    const tabEls = Array.from(tabBar.children);
+    return tabEls.indexOf(tab.tabEl);
+}
+
+// Save tab state to backend and quit.
+async function saveAndQuit() {
+    try {
+        await window.go.gui.App.SaveTabState({
+            open: getOpenTabState(),
+            activeIdx: getActiveTabIndex(),
+            closed: closedTabStack,
+        });
+    } catch (err) {
+        console.error("Failed to save tab state:", err);
+    }
+    window.go.gui.App.Quit();
+}
+
+// Listen for window close (X button) — save then quit.
+window.runtime.EventsOn("app:beforeClose", async () => {
+    await saveAndQuit();
+});
+
+// Reopen the most recently closed tab.
+async function reopenClosedTab() {
+    if (closedTabStack.length === 0) return;
+    const entry = closedTabStack.pop();
+    const name = entry.book + " " + entry.chapter;
+
+    // Validate translation; fall back to default if unavailable
+    let translation = entry.translation;
+    if (translationOptions.length > 0 && !translationOptions.some(t => t.value === translation)) {
+        translation = await window.go.gui.App.GetDefaultTranslation();
+    }
+
+    try {
+        const verses = await window.go.gui.App.LoadChapter(entry.book, entry.chapter, translation);
+        const tabId = createTab(name, verses, [], translation);
+
+        // Reinsert at original position
+        const tab = tabs[tabId];
+        const tabEls = Array.from(tabBar.children);
+        const clampedPos = Math.min(entry.position, tabEls.length - 1);
+        if (clampedPos < tabEls.length - 1) {
+            tabBar.insertBefore(tab.tabEl, tabBar.children[clampedPos]);
+        }
+    } catch (err) {
+        console.error("Failed to reopen tab:", err);
+    }
+}
+
+// Restore tabs from saved state on startup.
+async function restoreTabState() {
+    const state = await window.go.gui.App.LoadTabState();
+    if (!state) return;
+
+    // Restore closed stack
+    if (state.closed) {
+        for (const entry of state.closed) {
+            closedTabStack.push(entry);
+        }
+    }
+
+    // Restore open tabs in order
+    if (state.open && state.open.length > 0) {
+        // Sort by position
+        const sorted = [...state.open].sort((a, b) => a.position - b.position);
+        const tabIds = [];
+
+        for (const entry of sorted) {
+            let translation = entry.translation;
+            if (translationOptions.length > 0 && !translationOptions.some(t => t.value === translation)) {
+                try {
+                    translation = await window.go.gui.App.GetDefaultTranslation();
+                } catch (e) {
+                    translation = entry.translation; // keep original on error
+                }
+            }
+
+            try {
+                const verses = await window.go.gui.App.LoadChapter(entry.book, entry.chapter, translation);
+                const name = entry.book + " " + entry.chapter;
+                const tabId = createTab(name, verses, [], translation);
+                tabIds.push(tabId);
+            } catch (err) {
+                console.error("Failed to restore tab:", entry, err);
+            }
+        }
+
+        // Select the previously active tab
+        if (state.activeIdx >= 0 && state.activeIdx < tabIds.length) {
+            selectTab(tabIds[state.activeIdx]);
+        }
+    }
+}
+
+// Kick off tab restoration after translations are loaded
+(async function() {
+    await translationsLoaded;
+    try {
+        await restoreTabState();
+    } catch (e) {
+        console.error("Failed to restore tab state:", e);
+    }
+})();

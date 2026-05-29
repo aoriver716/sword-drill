@@ -128,6 +128,7 @@ func main() {
 			app.Startup(ctx)
 			go watchClipboard(ctx, app)
 		},
+		OnBeforeClose: app.BeforeClose,
 		Bind: []interface{}{
 			app,
 		},
