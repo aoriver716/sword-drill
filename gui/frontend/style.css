@@ -264,6 +264,94 @@ body {
     max-width: 200px;
 }
 
+/* Toolbar separator */
+.toolbar-separator {
+    width: 1px;
+    height: 18px;
+    background: #ccc;
+    margin: 0 2px;
+}
+
+/* Toolbar toggle (parallel mode) */
+.toolbar-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #555;
+    white-space: nowrap;
+}
+
+.toolbar-toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toolbar-toggle .toggle-track {
+    position: relative;
+    width: 28px;
+    height: 14px;
+    background: #ccc;
+    border-radius: 7px;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.toolbar-toggle .toggle-track::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s;
+}
+
+.toolbar-toggle input:checked + .toggle-track {
+    background: #4a90d9;
+}
+
+.toolbar-toggle input:checked + .toggle-track::after {
+    transform: translateX(14px);
+}
+
+.toolbar-toggle-label {
+    user-select: none;
+}
+
+#browser-toolbar #parallel-select {
+    font-size: 13px;
+    padding: 2px 4px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background: #fff;
+    max-width: 200px;
+}
+
+/* Parallel view layout */
+.parallel-table {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.parallel-row {
+    display: flex;
+    gap: 16px;
+    border-bottom: 1px solid #eee;
+    padding: 2px 0;
+}
+
+.parallel-cell {
+    flex: 1;
+    min-width: 0;
+}
+
 .tab {
     display: flex;
     align-items: center;

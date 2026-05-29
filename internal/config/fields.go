@@ -61,6 +61,32 @@ func RegisterFields(r *Registry) {
 	})
 
 	r.Register(FieldDef{
+		Key: "parallel_translation", Label: "Preferred Parallel Translation", Group: "API",
+		Widget: WidgetSelect, Default: "de4e12af7f28f599-02",
+		RequiresRestart: func(reg *Registry) bool {
+			_, apiPending := reg.Pending("bible_text_api")
+			return apiPending
+		},
+		OptionsFunc: func() []Option {
+			bible := r.PendingBibleLookup()
+			if bible == nil {
+				return nil
+			}
+			translations, err := bible.Translations()
+			if err != nil {
+				return nil
+			}
+			opts := make([]Option, len(translations))
+			for i, t := range translations {
+				opts[i] = Option{Label: t.Name, Value: t.Key}
+			}
+			return opts
+		},
+		Getter: func(c *Config) any { return c.ParallelTranslation },
+		Setter: func(c *Config, v any) { c.ParallelTranslation, _ = v.(string) },
+	})
+
+	r.Register(FieldDef{
 		Key: "formatting_options.verse_by_verse", Label: "Verse-by-Verse", Group: "Formatting",
 		Description: "Display each verse on its own line",
 		Widget:      WidgetToggle, Default: true,

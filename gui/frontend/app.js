@@ -88,6 +88,7 @@ const translationsLoaded = new Promise(resolve => { translationsReady = resolve;
     try {
         translationOptions = await window.go.gui.App.GetTranslations() || [];
         populateTranslationSelect();
+        populateParallelSelect();
     } catch (e) {
         console.error("Failed to get translations:", e);
     }
@@ -105,6 +106,43 @@ function populateTranslationSelect() {
 }
 
 browserToolbar.append(bookSelect, btnFirst, btnPrev, chapterInput, chapterTotal, btnNext, btnLast, translationSelect);
+
+// --- Parallel mode controls ---
+const parallelSeparator = document.createElement("span");
+parallelSeparator.className = "toolbar-separator";
+
+const parallelLabel = document.createElement("label");
+parallelLabel.className = "toolbar-toggle";
+parallelLabel.title = "Parallel mode";
+
+const parallelCheckbox = document.createElement("input");
+parallelCheckbox.type = "checkbox";
+
+const parallelTrack = document.createElement("span");
+parallelTrack.className = "toggle-track";
+
+const parallelText = document.createElement("span");
+parallelText.className = "toolbar-toggle-label";
+parallelText.textContent = "Parallel";
+
+parallelLabel.append(parallelCheckbox, parallelTrack, parallelText);
+
+const parallelSelect = document.createElement("select");
+parallelSelect.id = "parallel-select";
+parallelSelect.title = "Parallel translation";
+parallelSelect.style.display = "none";
+
+function populateParallelSelect() {
+    parallelSelect.innerHTML = "";
+    for (const t of translationOptions) {
+        const opt = document.createElement("option");
+        opt.value = t.value;
+        opt.textContent = t.label;
+        parallelSelect.appendChild(opt);
+    }
+}
+
+browserToolbar.append(parallelSeparator, parallelLabel, parallelSelect);
 
 // --- Tab state helpers ---
 
@@ -127,13 +165,22 @@ function updateToolbarState() {
     btnNext.disabled = s.chapter >= maxCh;
     btnLast.disabled = s.chapter >= maxCh;
     translationSelect.value = s.translation;
+    parallelCheckbox.checked = !!s.parallelMode;
+    parallelSelect.style.display = s.parallelMode ? "" : "none";
+    if (s.parallelMode && s.parallelTranslation) {
+        parallelSelect.value = s.parallelTranslation;
+    }
 }
 
 // Render a tab's DOM to match its current state and verses.
 function renderTab(tab) {
     const name = tabName(tab.state);
     tab.dom.pageHeader.textContent = name;
-    renderVerses(tab.dom.pageBody, tab.verses);
+    if (tab.state.parallelMode && tab.parallelVerses) {
+        renderParallelVerses(tab.dom.pageBody, tab.verses, tab.parallelVerses);
+    } else {
+        renderVerses(tab.dom.pageBody, tab.verses);
+    }
     tab.dom.tabEl.querySelector("span:first-child").textContent = name;
     tab.dom.tabEl.dataset.name = name;
 }
@@ -152,13 +199,53 @@ async function updateTab(id, changes) {
         newState.chapter = Math.max(1, Math.min(newState.chapter, maxCh));
     }
 
-    // No change
-    if (newState.book === oldState.book && newState.chapter === oldState.chapter && newState.translation === oldState.translation) {
+    // When enabling parallel mode, auto-enable verse-by-verse and set default parallel translation
+    if (changes.parallelMode && newState.parallelMode) {
+        if (!formatOpts.verseByVerse) {
+            try {
+                await window.go.gui.App.UpdateConfigField("formatting_options.verse_by_verse", true);
+            } catch (e) {
+                console.error("Failed to enable verse-by-verse:", e);
+            }
+        }
+        if (!newState.parallelTranslation) {
+            try {
+                newState.parallelTranslation = await window.go.gui.App.GetParallelTranslation();
+            } catch (e) {
+                newState.parallelTranslation = newState.translation;
+            }
+        }
+    }
+
+    // Determine what needs fetching
+    const needMainVerses = newState.book !== oldState.book ||
+        newState.chapter !== oldState.chapter ||
+        newState.translation !== oldState.translation;
+    const needParallelVerses = newState.parallelMode && (
+        needMainVerses ||
+        newState.parallelTranslation !== oldState.parallelTranslation ||
+        changes.parallelMode
+    );
+
+    // No change at all
+    if (!needMainVerses && !needParallelVerses &&
+        newState.parallelMode === oldState.parallelMode) {
         return;
     }
 
-    // Fetch new verses
-    const verses = await window.go.gui.App.LoadChapter(newState.book, newState.chapter, newState.translation);
+    // Fetch main verses
+    let verses = tab.verses;
+    if (needMainVerses) {
+        verses = await window.go.gui.App.LoadChapter(newState.book, newState.chapter, newState.translation);
+    }
+
+    // Fetch parallel verses
+    let parallelVerses = tab.parallelVerses || null;
+    if (newState.parallelMode && needParallelVerses) {
+        parallelVerses = await window.go.gui.App.LoadChapter(newState.book, newState.chapter, newState.parallelTranslation);
+    } else if (!newState.parallelMode) {
+        parallelVerses = null;
+    }
 
     // Notify Go backend of rename
     const oldName = tabName(oldState);
@@ -170,6 +257,7 @@ async function updateTab(id, changes) {
     // Apply
     tab.state = newState;
     tab.verses = verses;
+    tab.parallelVerses = parallelVerses;
     renderTab(tab);
     if (activeTab === id) {
         updateToolbarState();
@@ -249,6 +337,30 @@ translationSelect.addEventListener("change", async () => {
     }
 });
 
+parallelCheckbox.addEventListener("change", async () => {
+    if (activeTab == null) return;
+    const enabled = parallelCheckbox.checked;
+    try {
+        await updateTab(activeTab, { parallelMode: enabled });
+    } catch (err) {
+        console.error("Failed to toggle parallel mode:", err);
+        parallelCheckbox.checked = !enabled;
+    }
+});
+
+parallelSelect.addEventListener("change", async () => {
+    if (activeTab == null) return;
+    const tab = tabs[activeTab];
+    const newTranslation = parallelSelect.value;
+    if (newTranslation === tab.state.parallelTranslation) return;
+    try {
+        await updateTab(activeTab, { parallelTranslation: newTranslation });
+    } catch (err) {
+        console.error("Failed to change parallel translation:", err);
+        parallelSelect.value = tab.state.parallelTranslation;
+    }
+});
+
 // Verse rendering and highlighting
 let formatOpts = { verseByVerse: false, showVerseNums: false };
 
@@ -265,7 +377,7 @@ let formatOpts = { verseByVerse: false, showVerseNums: false };
 window.runtime.EventsOn("config:formatChanged", (opts) => {
     formatOpts = opts;
     for (const tab of Object.values(tabs)) {
-        renderVerses(tab.dom.pageBody, tab.verses);
+        renderTab(tab);
     }
 });
 
@@ -287,6 +399,47 @@ function renderVerses(container, verses) {
         span.textContent = text;
         container.appendChild(span);
     }
+}
+
+function renderParallelVerses(container, mainVerses, parallelVerses) {
+    container.innerHTML = "";
+    const table = document.createElement("div");
+    table.className = "parallel-table";
+    const maxLen = Math.max(mainVerses.length, parallelVerses.length);
+    for (let i = 0; i < maxLen; i++) {
+        const row = document.createElement("div");
+        row.className = "parallel-row";
+
+        const leftCell = document.createElement("div");
+        leftCell.className = "parallel-cell";
+        if (i < mainVerses.length) {
+            const span = document.createElement("span");
+            span.className = "verse";
+            span.dataset.verse = mainVerses[i].number;
+            let text = "";
+            if (formatOpts.showVerseNums) text += mainVerses[i].number + " ";
+            text += mainVerses[i].text;
+            span.textContent = text;
+            leftCell.appendChild(span);
+        }
+
+        const rightCell = document.createElement("div");
+        rightCell.className = "parallel-cell";
+        if (i < parallelVerses.length) {
+            const span = document.createElement("span");
+            span.className = "verse";
+            span.dataset.verse = parallelVerses[i].number;
+            let text = "";
+            if (formatOpts.showVerseNums) text += parallelVerses[i].number + " ";
+            text += parallelVerses[i].text;
+            span.textContent = text;
+            rightCell.appendChild(span);
+        }
+
+        row.append(leftCell, rightCell);
+        table.appendChild(row);
+    }
+    container.appendChild(table);
 }
 
 function highlightVerses(container, ranges) {
@@ -335,7 +488,7 @@ window.runtime.EventsOn("log:append", (entry) => {
 // --- Tab creation ---
 
 // Create a new browser tab from state {book, chapter, translation} and verses.
-function createTab(state, verses, highlight) {
+function createTab(state, verses, highlight, parallelVerses) {
     const tabId = nextTabId++;
 
     // Hide placeholder
@@ -411,7 +564,11 @@ function createTab(state, verses, highlight) {
 
     const pageBody = document.createElement("div");
     pageBody.className = "tab-page-body";
-    renderVerses(pageBody, verses);
+    if (state.parallelMode && parallelVerses) {
+        renderParallelVerses(pageBody, verses, parallelVerses);
+    } else {
+        renderVerses(pageBody, verses);
+    }
 
     page.appendChild(pageHeader);
     page.appendChild(pageBody);
@@ -421,6 +578,7 @@ function createTab(state, verses, highlight) {
         state: { ...state },
         dom: { tabEl, page, pageHeader, pageBody },
         verses,
+        parallelVerses: parallelVerses || null,
     };
     selectTab(tabId);
     highlightVerses(pageBody, highlight);
@@ -910,7 +1068,23 @@ async function restoreTabState() {
 
             try {
                 const verses = await window.go.gui.App.LoadChapter(entry.book, entry.chapter, translation);
-                const tabId = createTab({ book: entry.book, chapter: entry.chapter, translation }, verses, []);
+                let parallelVerses = null;
+                if (entry.parallelMode && entry.parallelTranslation) {
+                    const pTranslation = await validateTranslation(entry.parallelTranslation);
+                    try {
+                        parallelVerses = await window.go.gui.App.LoadChapter(entry.book, entry.chapter, pTranslation);
+                    } catch (e) {
+                        console.error("Failed to load parallel verses:", e);
+                    }
+                }
+                const tabState = {
+                    book: entry.book,
+                    chapter: entry.chapter,
+                    translation,
+                    parallelMode: !!entry.parallelMode,
+                    parallelTranslation: entry.parallelTranslation || "",
+                };
+                const tabId = createTab(tabState, verses, [], parallelVerses);
                 tabIds.push(tabId);
                 // Register restored tab in Go backend so HasTab() works.
                 const name = tabName(tabs[tabId].state);
