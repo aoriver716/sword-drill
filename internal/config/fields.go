@@ -36,6 +36,21 @@ func RegisterFields(r *Registry) {
 	r.Register(FieldDef{
 		Key: "default_translation", Label: "Translation", Group: "API",
 		Widget: WidgetSelect, Default: "de4e12af7f28f599-02",
+		OptionsFunc: func() []Option {
+			bible := r.BibleLookup()
+			if bible == nil {
+				return nil
+			}
+			translations, err := bible.Translations()
+			if err != nil {
+				return nil
+			}
+			opts := make([]Option, len(translations))
+			for i, t := range translations {
+				opts[i] = Option{Label: t.Name, Value: t.Key}
+			}
+			return opts
+		},
 		Getter: func(c *Config) any { return c.DefaultTranslation },
 		Setter: func(c *Config, v any) { c.DefaultTranslation, _ = v.(string) },
 	})
