@@ -1,6 +1,7 @@
 // Scripture Browser state
 const tabs = {};
 let activeTab = null;
+let nextTabId = 1;
 
 const tabBar = document.getElementById("tab-bar");
 const tabContent = document.getElementById("tab-content");
@@ -64,7 +65,32 @@ const btnLast = document.createElement("button");
 btnLast.title = "Last chapter";
 btnLast.appendChild(svgIcon('<path d="M11 3v8M9 7l-5-4v8z"/>'));
 
-browserToolbar.append(bookSelect, btnFirst, btnPrev, chapterInput, chapterTotal, btnNext, btnLast);
+const translationSelect = document.createElement("select");
+translationSelect.id = "translation-select";
+translationSelect.title = "Translation";
+
+// Populate translation selector from Go backend
+let translationOptions = [];
+(async function() {
+    try {
+        translationOptions = await window.go.gui.App.GetTranslations() || [];
+        populateTranslationSelect();
+    } catch (e) {
+        console.error("Failed to get translations:", e);
+    }
+})();
+
+function populateTranslationSelect() {
+    translationSelect.innerHTML = "";
+    for (const t of translationOptions) {
+        const opt = document.createElement("option");
+        opt.value = t.value;
+        opt.textContent = t.label;
+        translationSelect.appendChild(opt);
+    }
+}
+
+browserToolbar.append(bookSelect, btnFirst, btnPrev, chapterInput, chapterTotal, btnNext, btnLast, translationSelect);
 
 function updateToolbarState() {
     const tab = tabs[activeTab];
@@ -77,6 +103,7 @@ function updateToolbarState() {
     btnPrev.disabled = tab.chapter <= 1;
     btnNext.disabled = tab.chapter >= maxCh;
     btnLast.disabled = tab.chapter >= maxCh;
+    translationSelect.value = tab.translation;
 }
 
 async function navigateTo(book, chapter) {
@@ -86,17 +113,11 @@ async function navigateTo(book, chapter) {
     chapter = Math.max(1, Math.min(chapter, maxCh));
 
     const newName = book + " " + chapter;
-    if (newName === activeTab) return;
-
-    // Check if a tab with that name already exists
-    if (tabs[newName]) {
-        selectTab(newName);
-        return;
-    }
+    const oldName = tab.book + " " + tab.chapter;
+    if (newName === oldName) return;
 
     try {
-        const verses = await window.go.gui.App.LoadChapter(book, chapter);
-        const oldName = activeTab;
+        const verses = await window.go.gui.App.LoadChapter(book, chapter, tab.translation);
 
         // Rename in Go backend
         window.go.gui.App.RenameTab(oldName, newName);
@@ -109,11 +130,6 @@ async function navigateTo(book, chapter) {
         renderVerses(tab.pageBody, verses);
         tab.tabEl.querySelector("span:first-child").textContent = newName;
         tab.tabEl.dataset.name = newName;
-
-        // Re-key in tabs map
-        delete tabs[oldName];
-        tabs[newName] = tab;
-        activeTab = newName;
 
         updateToolbarState();
     } catch (err) {
@@ -170,6 +186,22 @@ chapterInput.addEventListener("blur", () => {
     }
 });
 
+translationSelect.addEventListener("change", async () => {
+    const tab = tabs[activeTab];
+    if (!tab) return;
+    const newTranslation = translationSelect.value;
+    if (newTranslation === tab.translation) return;
+    try {
+        const verses = await window.go.gui.App.LoadChapter(tab.book, tab.chapter, newTranslation);
+        tab.translation = newTranslation;
+        tab.verses = verses;
+        renderVerses(tab.pageBody, verses);
+    } catch (err) {
+        console.error("Failed to change translation:", err);
+        translationSelect.value = tab.translation;
+    }
+});
+
 // Verse rendering and highlighting
 let formatOpts = { verseByVerse: false, showVerseNums: false };
 
@@ -181,6 +213,14 @@ let formatOpts = { verseByVerse: false, showVerseNums: false };
         console.error("Failed to get format options:", e);
     }
 })();
+
+// Listen for config changes from Go backend and re-render browser tabs
+window.runtime.EventsOn("config:formatChanged", (opts) => {
+    formatOpts = opts;
+    for (const tab of Object.values(tabs)) {
+        renderVerses(tab.pageBody, tab.verses);
+    }
+});
 
 function renderVerses(container, verses) {
     container.innerHTML = "";
@@ -245,12 +285,9 @@ window.runtime.EventsOn("log:append", (entry) => {
     logEntries.scrollTop = logEntries.scrollHeight;
 });
 
-// Create a new browser tab with the given name, verses, and optional highlight ranges
-function createTab(name, verses, highlight) {
-    if (tabs[name]) {
-        selectTab(name);
-        return;
-    }
+// Create a new browser tab with the given name, verses, optional highlight ranges, and translation
+function createTab(name, verses, highlight, translation) {
+    const tabId = nextTabId++;
 
     // Parse book and chapter from tab name (e.g. "Genesis 1", "1 Chronicles 15")
     const match = name.match(/^(.+)\s+(\d+)$/);
@@ -266,25 +303,26 @@ function createTab(name, verses, highlight) {
     // Create tab button
     const tabEl = document.createElement("div");
     tabEl.className = "tab";
+    tabEl.dataset.tabId = tabId;
     tabEl.dataset.name = name;
 
     const label = document.createElement("span");
     label.textContent = name;
-    label.addEventListener("click", () => selectTab(tabEl.dataset.name));
+    label.addEventListener("click", () => selectTab(tabId));
 
     const closeBtn = document.createElement("span");
     closeBtn.className = "close-btn";
     closeBtn.textContent = "✕";
     closeBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        closeTab(tabEl.dataset.name);
+        closeTab(tabId);
     });
 
     // Middle-click to close
     tabEl.addEventListener("mousedown", (e) => {
         if (e.button === 1) {
             e.preventDefault();
-            closeTab(tabEl.dataset.name);
+            closeTab(tabId);
         }
     });
 
@@ -292,7 +330,7 @@ function createTab(name, verses, highlight) {
     tabEl.draggable = true;
     tabEl.addEventListener("dragstart", (e) => {
         e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", name);
+        e.dataTransfer.setData("text/plain", String(tabId));
         tabEl.classList.add("dragging");
     });
     tabEl.addEventListener("dragend", () => {
@@ -333,26 +371,36 @@ function createTab(name, verses, highlight) {
     page.appendChild(pageBody);
     tabContent.appendChild(page);
 
-    tabs[name] = { tabEl, page, pageHeader, pageBody, book, chapter, verses };
-    selectTab(name);
+    tabs[tabId] = { tabEl, page, pageHeader, pageBody, book, chapter, verses, translation };
+    selectTab(tabId);
     highlightVerses(pageBody, highlight);
+    return tabId;
 }
 
 // Listen for browser tab events from Go backend
 window.runtime.EventsOn("browser:openTab", (tab) => {
-    createTab(tab.name, tab.verses, tab.highlight);
+    createTab(tab.name, tab.verses, tab.highlight, tab.translation);
 });
+
+// Find a tab by its display name (book + chapter). Returns the ID or null.
+function findTabByName(name) {
+    for (const [id, tab] of Object.entries(tabs)) {
+        const tabName = tab.book + " " + tab.chapter;
+        if (tabName === name) return Number(id);
+    }
+    return null;
+}
 
 // Listen for focus+highlight events on existing tabs
 window.runtime.EventsOn("browser:focusTab", (data) => {
-    const tab = tabs[data.name];
-    if (!tab) return;
-    selectTab(data.name);
-    highlightVerses(tab.pageBody, data.highlight);
+    const id = findTabByName(data.name);
+    if (id == null) return;
+    selectTab(id);
+    highlightVerses(tabs[id].pageBody, data.highlight);
 });
 
-function selectTab(name) {
-    if (activeTab === name) return;
+function selectTab(id) {
+    if (activeTab === id) return;
 
     // Deselect previous
     for (const [key, val] of Object.entries(tabs)) {
@@ -361,30 +409,31 @@ function selectTab(name) {
     }
 
     // Select new
-    if (tabs[name]) {
-        tabs[name].tabEl.classList.add("active");
-        tabs[name].page.classList.add("active");
-        activeTab = name;
+    if (tabs[id]) {
+        tabs[id].tabEl.classList.add("active");
+        tabs[id].page.classList.add("active");
+        activeTab = id;
         browserToolbar.classList.add("visible");
         updateToolbarState();
     }
 }
 
-function closeTab(name) {
-    const tab = tabs[name];
+function closeTab(id) {
+    const tab = tabs[id];
     if (!tab) return;
 
     tab.tabEl.remove();
     tab.page.remove();
-    delete tabs[name];
+    delete tabs[id];
 
     // Notify Go backend
-    window.go.gui.App.CloseTab(name);
+    const tabName = tab.book + " " + tab.chapter;
+    window.go.gui.App.CloseTab(tabName);
 
     // Select another tab or show placeholder
     const remaining = Object.keys(tabs);
     if (remaining.length > 0) {
-        selectTab(remaining[remaining.length - 1]);
+        selectTab(Number(remaining[remaining.length - 1]));
     } else {
         activeTab = null;
         browserToolbar.classList.remove("visible");
@@ -415,15 +464,14 @@ document.getElementById("btn-clear").addEventListener("click", () => {
 
 // New tab: opens Genesis 1
 async function newTab() {
-    const name = "Genesis 1";
-    if (tabs[name]) {
-        selectTab(name);
-        return;
-    }
+    const book = "Genesis";
+    const chapter = 1;
     try {
-        const verses = await window.go.gui.App.LoadChapter("Genesis", 1);
+        const translation = await window.go.gui.App.GetDefaultTranslation();
+        const verses = await window.go.gui.App.LoadChapter(book, chapter, translation);
+        const name = book + " " + chapter;
         window.go.gui.App.RenameTab("", name);
-        createTab(name, verses, []);
+        createTab(name, verses, [], translation);
     } catch (err) {
         console.error("Failed to open new tab:", err);
     }
@@ -461,6 +509,10 @@ document.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "n") {
         e.preventDefault();
         newTab();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === "w") {
+        e.preventDefault();
+        if (activeTab != null) closeTab(activeTab);
     }
 });
 
@@ -520,15 +572,23 @@ document.addEventListener("mouseup", () => {
 // Preferences dialog
 const prefsDialog = document.getElementById("prefs-dialog");
 const prefsBody = document.getElementById("prefs-body");
+const prefsRestartNotice = document.getElementById("prefs-restart-notice");
 let pendingChanges = {};
+let restartRequired = false;
+
+function updateRestartNotice() {
+    prefsRestartNotice.style.display = restartRequired ? "" : "none";
+}
 
 document.getElementById("prefs-close").addEventListener("click", () => {
     pendingChanges = {};
+    restartRequired = false;
     prefsDialog.close();
 });
 
 document.getElementById("prefs-cancel").addEventListener("click", () => {
     pendingChanges = {};
+    restartRequired = false;
     prefsDialog.close();
 });
 
@@ -545,7 +605,6 @@ document.getElementById("prefs-apply").addEventListener("click", async () => {
 document.getElementById("prefs-reset").addEventListener("click", async () => {
     pendingChanges = {};
     await window.go.gui.App.ResetConfigToDefaults();
-    formatOpts = await window.go.gui.App.GetFormatOptions();
     await window.go.gui.App.RefreshTranslations();
     await renderPreferences();
 });
@@ -553,6 +612,7 @@ document.getElementById("prefs-reset").addEventListener("click", async () => {
 // Also cancel on Escape (dialog has built-in close, but we need to clear pending)
 prefsDialog.addEventListener("cancel", () => {
     pendingChanges = {};
+    restartRequired = false;
 });
 
 async function applyPendingChanges() {
@@ -560,11 +620,12 @@ async function applyPendingChanges() {
         await window.go.gui.App.UpdateConfigField(key, value);
     }
     pendingChanges = {};
-    formatOpts = await window.go.gui.App.GetFormatOptions();
 }
 
 async function openPreferences() {
     pendingChanges = {};
+    restartRequired = false;
+    updateRestartNotice();
     await window.go.gui.App.RefreshTranslations();
     await renderPreferences();
     prefsDialog.showModal();
@@ -665,12 +726,20 @@ function createControl(field) {
                 select.addEventListener("change", async () => {
                     await window.go.gui.App.UpdateConfigField(field.key, select.value);
                     delete pendingChanges["default_translation"];
+                    if (field.requiresRestart) {
+                        restartRequired = true;
+                        updateRestartNotice();
+                    }
                     await window.go.gui.App.RefreshTranslations();
                     await renderPreferences();
                 });
             } else {
                 select.addEventListener("change", () => {
                     pendingChanges[field.key] = select.value;
+                    if (field.requiresRestart) {
+                        restartRequired = true;
+                        updateRestartNotice();
+                    }
                 });
             }
             return select;

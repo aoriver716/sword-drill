@@ -22,21 +22,16 @@ type logEntry struct {
 
 // browserTab represents a chapter tab event for the frontend.
 type browserTab struct {
-	Name      string         `json:"name"`
-	Verses    []ChapterVerse `json:"verses"`
-	Highlight [][2]int       `json:"highlight"`
+	Name        string         `json:"name"`
+	Verses      []ChapterVerse `json:"verses"`
+	Highlight   [][2]int       `json:"highlight"`
+	Translation string         `json:"translation"`
 }
 
 // focusTab represents a focus+highlight event for an existing tab.
 type focusTab struct {
 	Name      string   `json:"name"`
 	Highlight [][2]int `json:"highlight"`
-}
-
-// FormatOptions controls how verses are rendered in the browser.
-type FormatOptions struct {
-	VerseByVerse  bool `json:"verseByVerse"`
-	ShowVerseNums bool `json:"showVerseNums"`
 }
 
 // App is the Wails application backend. It implements ScriptureDisplay.
@@ -98,6 +93,22 @@ func (a *App) RefreshTranslations() error {
 // Startup is called when the Wails app starts.
 func (a *App) Startup(ctx context.Context) {
 	a.ctx = ctx
+	if a.registry != nil {
+		a.registry.OnChange(func(cfg *config.Config) {
+			a.emitFormatOptions(cfg)
+		})
+	}
+}
+
+// emitFormatOptions pushes the current formatting options to the frontend.
+func (a *App) emitFormatOptions(cfg *config.Config) {
+	if a.ctx == nil {
+		return
+	}
+	runtime.EventsEmit(a.ctx, "config:formatChanged", map[string]bool{
+		"verseByVerse":  cfg.FormattingOptions.VerseByVerse,
+		"showVerseNums": cfg.FormattingOptions.ShowVerseNums,
+	})
 }
 
 // Ctx returns the app context.
@@ -106,11 +117,11 @@ func (a *App) Ctx() context.Context {
 }
 
 // GetFormatOptions returns the current formatting options (called from frontend).
-func (a *App) GetFormatOptions() FormatOptions {
+func (a *App) GetFormatOptions() map[string]bool {
 	cfg := a.registry.Config()
-	return FormatOptions{
-		VerseByVerse:  cfg.FormattingOptions.VerseByVerse,
-		ShowVerseNums: cfg.FormattingOptions.ShowVerseNums,
+	return map[string]bool{
+		"verseByVerse":  cfg.FormattingOptions.VerseByVerse,
+		"showVerseNums": cfg.FormattingOptions.ShowVerseNums,
 	}
 }
 
@@ -123,6 +134,11 @@ func (a *App) ShowResults(results []ScriptureResult) {
 			IsError:   r.IsError,
 		}
 		runtime.EventsEmit(a.ctx, "log:append", entry)
+	}
+
+	tabBehavior := a.registry.Config().TabOpenBehavior
+	if tabBehavior == "never" {
+		return
 	}
 
 	// Collect highlight ranges per tab
@@ -139,7 +155,8 @@ func (a *App) ShowResults(results []ScriptureResult) {
 		tabName := fmt.Sprintf("%s %d", r.Book, r.Chapter)
 		info, exists := tabMap[tabName]
 		if !exists {
-			info = &tabInfo{isNew: !a.HasTab(tabName)}
+			forceNew := tabBehavior == "always_new"
+			info = &tabInfo{isNew: forceNew || !a.HasTab(tabName)}
 			tabMap[tabName] = info
 		}
 		if r.StartVerse > 0 {
@@ -158,7 +175,8 @@ func (a *App) ShowResults(results []ScriptureResult) {
 		}
 
 		if info.isNew {
-			verses, err := a.chapterLookup(r.Book, r.Chapter)
+			translation := a.registry.Config().DefaultTranslation
+			verses, err := a.chapterLookup(r.Book, r.Chapter, translation)
 			if err != nil {
 				log.Printf("ERROR chapter lookup %s: %v", tabName, err)
 				delete(tabMap, tabName)
@@ -170,9 +188,10 @@ func (a *App) ShowResults(results []ScriptureResult) {
 			a.mu.Unlock()
 
 			runtime.EventsEmit(a.ctx, "browser:openTab", browserTab{
-				Name:      tabName,
-				Verses:    verses,
-				Highlight: info.highlights,
+				Name:        tabName,
+				Verses:      verses,
+				Highlight:   info.highlights,
+				Translation: translation,
 			})
 		} else {
 			runtime.EventsEmit(a.ctx, "browser:focusTab", focusTab{
@@ -211,10 +230,38 @@ func (a *App) HasTab(name string) bool {
 	return a.openTabs[name]
 }
 
-// LoadChapter is called from the frontend to load a book/chapter.
+// LoadChapter is called from the frontend to load a book/chapter/translation.
 // Returns the structured verse data.
-func (a *App) LoadChapter(book string, chapter int) ([]ChapterVerse, error) {
-	return a.chapterLookup(book, chapter)
+func (a *App) LoadChapter(book string, chapter int, translation string) ([]ChapterVerse, error) {
+	return a.chapterLookup(book, chapter, translation)
+}
+
+// GetTranslations returns the available translations for the current Bible API.
+func (a *App) GetTranslations() []config.Option {
+	if a.registry == nil {
+		return nil
+	}
+	bible := a.registry.BibleLookup()
+	if bible == nil {
+		return nil
+	}
+	translations, err := bible.Translations()
+	if err != nil {
+		return nil
+	}
+	opts := make([]config.Option, len(translations))
+	for i, t := range translations {
+		opts[i] = config.Option{Label: t.Name, Value: t.Key}
+	}
+	return opts
+}
+
+// GetDefaultTranslation returns the currently configured default translation key.
+func (a *App) GetDefaultTranslation() string {
+	if a.registry == nil {
+		return ""
+	}
+	return a.registry.Config().DefaultTranslation
 }
 
 // RenameTab updates the backend tab tracking when a tab changes book/chapter.

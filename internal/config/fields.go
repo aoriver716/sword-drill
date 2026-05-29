@@ -29,12 +29,13 @@ func RegisterFields(r *Registry) {
 	r.Register(FieldDef{
 		Key: "bible_text_api", Label: "Bible API", Group: "API",
 		Widget: WidgetSelect, Default: "api.bible",
-		Getter: func(c *Config) any { return c.BibleTextAPI },
-		Setter: func(c *Config, v any) { c.BibleTextAPI, _ = v.(string) },
+		RequiresRestart: true,
+		Getter:          func(c *Config) any { return c.BibleTextAPI },
+		Setter:          func(c *Config, v any) { c.BibleTextAPI, _ = v.(string) },
 	})
 
 	r.Register(FieldDef{
-		Key: "default_translation", Label: "Translation", Group: "API",
+		Key: "default_translation", Label: "Default Translation", Group: "API",
 		Widget: WidgetSelect, Default: "de4e12af7f28f599-02",
 		OptionsFunc: func() []Option {
 			bible := r.BibleLookup()
@@ -69,5 +70,18 @@ func RegisterFields(r *Registry) {
 		Widget:      WidgetToggle, Default: true,
 		Getter: func(c *Config) any { return c.FormattingOptions.ShowVerseNums },
 		Setter: func(c *Config, v any) { c.FormattingOptions.ShowVerseNums, _ = v.(bool) },
+	})
+
+	r.Register(FieldDef{
+		Key: "tab_open_behavior", Label: "Scripture Tab Behavior", Group: "Browser",
+		Description: "How tabs open when scripture is detected from the clipboard",
+		Widget:      WidgetSelect, Default: "focus",
+		Options: []Option{
+			{Label: "Focus existing tab if possible", Value: "focus"},
+			{Label: "Always open new tab", Value: "always_new"},
+			{Label: "Never open a tab", Value: "never"},
+		},
+		Getter: func(c *Config) any { return c.TabOpenBehavior },
+		Setter: func(c *Config, v any) { c.TabOpenBehavior, _ = v.(string) },
 	})
 }
