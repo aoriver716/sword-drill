@@ -59,9 +59,17 @@ type FieldDef struct {
 	Default         any
 	Options         []Option    // static options (nil if dynamic)
 	OptionsFunc     OptionsFunc // called at schema time if non-nil
-	RequiresRestart bool
+	RequiresRestart func(*Registry) bool // evaluated at runtime; nil means false
 	Getter          func(*Config) any
 	Setter          func(*Config, any)
+}
+
+// requiresRestart returns whether this field currently requires a restart.
+func (f *FieldDef) requiresRestart(r *Registry) bool {
+	if f.RequiresRestart != nil {
+		return f.RequiresRestart(r)
+	}
+	return false
 }
 
 // Registry holds all config field definitions and the current config.
@@ -69,6 +77,7 @@ type Registry struct {
 	fields    []FieldDef
 	providers []LookupProvider
 	cfg       Config
+	pending   map[string]any // buffered values for RequiresRestart fields
 	path      string
 	onChange  func(*Config)
 }
@@ -76,8 +85,15 @@ type Registry struct {
 // NewRegistry creates a registry that loads/saves from the given path.
 func NewRegistry(path string) *Registry {
 	return &Registry{
-		path: path,
+		path:    path,
+		pending: make(map[string]any),
 	}
+}
+
+// Pending returns the pending value for a field key, or nil if none.
+func (r *Registry) Pending(key string) (any, bool) {
+	v, ok := r.pending[key]
+	return v, ok
 }
 
 // RegisterProvider adds a lookup provider to the registry.
@@ -93,6 +109,29 @@ func (r *Registry) BibleLookup() lookup.BibleLookup {
 		}
 	}
 	// Fallback to first available provider
+	for _, p := range r.providers {
+		if p.Available() {
+			return p.Factory(&r.cfg)
+		}
+	}
+	return nil
+}
+
+// PendingBibleLookup returns the BibleLookup client for the pending API
+// provider if one has been selected but not yet applied, otherwise falls
+// back to the live config. Used by the UI to populate translation options.
+func (r *Registry) PendingBibleLookup() lookup.BibleLookup {
+	apiKey := r.cfg.BibleTextAPI
+	if v, ok := r.pending["bible_text_api"]; ok {
+		if s, ok := v.(string); ok {
+			apiKey = s
+		}
+	}
+	for _, p := range r.providers {
+		if p.Key == apiKey {
+			return p.Factory(&r.cfg)
+		}
+	}
 	for _, p := range r.providers {
 		if p.Available() {
 			return p.Factory(&r.cfg)
@@ -128,6 +167,7 @@ func (r *Registry) Register(f FieldDef) {
 }
 
 // Load reads the config from disk. If the file doesn't exist, generates it from defaults.
+// Clears any pending (buffered) values since a load/restart makes them live.
 func (r *Registry) Load() error {
 	// Start from field defaults
 	r.applyDefaults()
@@ -151,6 +191,9 @@ func (r *Registry) Load() error {
 	if r.ensureAvailableProvider() {
 		_ = r.Save()
 	}
+
+	// Clear pending — restart applies buffered values.
+	r.pending = make(map[string]any)
 	return nil
 }
 
@@ -178,9 +221,17 @@ func (r *Registry) ensureAvailableProvider() bool {
 	return false
 }
 
-// Save writes the current config to disk.
+// Save writes the current config to disk, merging any pending values so
+// the on-disk file always reflects the user's intended state.
 func (r *Registry) Save() error {
-	data, err := json.MarshalIndent(r.cfg, "", "  ")
+	// Build a copy of cfg with pending values applied for serialization.
+	tmp := r.cfg
+	for _, f := range r.fields {
+		if v, ok := r.pending[f.Key]; ok {
+			f.Setter(&tmp, v)
+		}
+	}
+	data, err := json.MarshalIndent(tmp, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -193,6 +244,7 @@ func (r *Registry) Config() *Config {
 }
 
 // Schema returns all field schemas with current values and resolved options.
+// For RequiresRestart fields, the value shown is the pending value if one exists.
 func (r *Registry) Schema() []FieldSchema {
 	schemas := make([]FieldSchema, len(r.fields))
 	for i, f := range r.fields {
@@ -204,16 +256,21 @@ func (r *Registry) Schema() []FieldSchema {
 		if f.Key == "bible_text_api" {
 			opts = r.providerOptions()
 		}
+		// Use pending value for the UI if one is buffered.
+		value := f.Getter(&r.cfg)
+		if v, ok := r.pending[f.Key]; ok {
+			value = v
+		}
 		schemas[i] = FieldSchema{
 			Key:             f.Key,
 			Label:           f.Label,
 			Description:     f.Description,
 			Group:           f.Group,
 			Widget:          f.Widget,
-			Value:           f.Getter(&r.cfg),
+			Value:           value,
 			Default:         f.Default,
 			Options:         opts,
-			RequiresRestart: f.RequiresRestart,
+			RequiresRestart: f.requiresRestart(r),
 		}
 	}
 	return schemas
@@ -232,16 +289,38 @@ func (r *Registry) notifyChange() {
 }
 
 // Update sets a config field by key and saves to disk.
+// For RequiresRestart fields the value is buffered in pending rather than
+// applied to the live config. Non-restart fields update the live config
+// immediately.
 func (r *Registry) Update(key string, value any) error {
 	for _, f := range r.fields {
-		if f.Key == key {
-			f.Setter(&r.cfg, value)
-			if err := r.Save(); err != nil {
-				return err
-			}
-			r.notifyChange()
-			return nil
+		if f.Key != key {
+			continue
 		}
+
+		if f.requiresRestart(r) {
+			r.pending[key] = value
+		} else {
+			f.Setter(&r.cfg, value)
+		}
+
+		// When the API provider changes, auto-reset the translation
+		// to the new provider's default (also buffered in pending).
+		if key == "bible_text_api" {
+			newAPI, _ := value.(string)
+			for _, p := range r.providers {
+				if p.Key == newAPI {
+					r.pending["default_translation"] = p.DefaultTranslation
+					break
+				}
+			}
+		}
+
+		if err := r.Save(); err != nil {
+			return err
+		}
+		r.notifyChange()
+		return nil
 	}
 	return nil
 }
@@ -249,6 +328,7 @@ func (r *Registry) Update(key string, value any) error {
 // ResetToDefaults resets all fields to their default values and saves.
 func (r *Registry) ResetToDefaults() error {
 	r.cfg = Config{}
+	r.pending = make(map[string]any)
 	r.applyDefaults()
 	r.ensureAvailableProvider()
 	if err := r.Save(); err != nil {

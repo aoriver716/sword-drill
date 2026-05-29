@@ -29,7 +29,7 @@ func RegisterFields(r *Registry) {
 	r.Register(FieldDef{
 		Key: "bible_text_api", Label: "Bible API", Group: "API",
 		Widget: WidgetSelect, Default: "api.bible",
-		RequiresRestart: true,
+		RequiresRestart: func(*Registry) bool { return true },
 		Getter:          func(c *Config) any { return c.BibleTextAPI },
 		Setter:          func(c *Config, v any) { c.BibleTextAPI, _ = v.(string) },
 	})
@@ -37,8 +37,12 @@ func RegisterFields(r *Registry) {
 	r.Register(FieldDef{
 		Key: "default_translation", Label: "Default Translation", Group: "API",
 		Widget: WidgetSelect, Default: "de4e12af7f28f599-02",
+		RequiresRestart: func(reg *Registry) bool {
+			_, apiPending := reg.Pending("bible_text_api")
+			return apiPending
+		},
 		OptionsFunc: func() []Option {
-			bible := r.BibleLookup()
+			bible := r.PendingBibleLookup()
 			if bible == nil {
 				return nil
 			}

@@ -23,15 +23,6 @@
                 </div>
             </div>
             <div id="menu-toolbar">
-                <button id="btn-pause" title="Pause clipboard processing">
-                    <svg id="icon-pause" width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-                        <rect x="3" y="2" width="3" height="10" rx="0.5"/>
-                        <rect x="8" y="2" width="3" height="10" rx="0.5"/>
-                    </svg>
-                    <svg id="icon-play" width="14" height="14" viewBox="0 0 14 14" fill="currentColor" style="display:none">
-                        <path d="M3 1.5v11l9-5.5z"/>
-                    </svg>
-                </button>
             </div>
         </div>
 
@@ -43,16 +34,18 @@
             <div id="browser-toolbar"></div>
             <div id="tab-content">
                 <div class="placeholder">
-                    <div class="sample-box">
-                        <textarea class="sample-input" readonly rows="3">Try me!
-Select this text -> John 3:16
-And press Ctrl+C</textarea>
-                        <button class="sample-copy" title="Copy to clipboard">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <rect x="5" y="5" width="9" height="9" rx="1"/>
-                                <path d="M3 11V3a1 1 0 011-1h8"/>
-                            </svg>
-                        </button>
+                    <div class="hint-column">
+                        <span class="hint-label">Try me!</span>
+                        <div class="sample-box">
+                            <input class="sample-input" readonly value="John 3:16" />
+                            <button class="sample-copy" title="Copy to clipboard">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <rect x="5" y="5" width="9" height="9" rx="1"/>
+                                    <path d="M3 11V3a1 1 0 011-1h8"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <span class="hint-label">Select the above text and press <kbd>Ctrl + C</kbd></span>
                     </div>
                 </div>
             </div>
@@ -66,6 +59,15 @@ And press Ctrl+C</textarea>
             <div class="panel-header">
                 <span class="panel-title">Scripture Log</span>
                 <div class="toolbar">
+                    <button id="btn-pause" title="Pause clipboard processing">
+                        <svg id="icon-pause" width="16" height="16" viewBox="0 0 14 14" fill="currentColor">
+                            <rect x="3" y="2" width="3" height="10" rx="0.5"/>
+                            <rect x="8" y="2" width="3" height="10" rx="0.5"/>
+                        </svg>
+                        <svg id="icon-play" width="16" height="16" viewBox="0 0 14 14" fill="currentColor" style="display:none">
+                            <path d="M3 1.5v11l9-5.5z"/>
+                        </svg>
+                    </button>
                     <button id="btn-copy" title="Copy All">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
                             <rect x="5" y="5" width="9" height="9" rx="1"/>
