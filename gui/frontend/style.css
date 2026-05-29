@@ -814,3 +814,37 @@ body {
     color: #4a90d9;
     text-decoration: underline;
 }
+
+/* Update banner (startup notification) */
+.update-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: #e8f5e9;
+    border-bottom: 1px solid #a5d6a7;
+    font-size: 13px;
+    color: #2e7d32;
+    flex-shrink: 0;
+}
+
+.update-banner a {
+    color: #1565c0;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.update-banner button {
+    margin-left: auto;
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: #666;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.update-banner button:hover {
+    color: #333;
+}

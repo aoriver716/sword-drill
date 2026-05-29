@@ -62,13 +62,41 @@ function checkForUpdates() {
     });
 }
 
-// Auto-check on startup if enabled
-window.go.gui.App.ShouldCheckForUpdates().then((shouldCheck) => {
-    if (shouldCheck) {
-        window.go.gui.App.CheckForUpdates().then((info) => {
-            if (info.available) {
-                console.log(`Update available: ${info.latest}`);
-            }
+// Auto-check on startup if enabled.
+// Wails bindings may not be ready immediately in module scripts,
+// so wait for the DOM to be fully loaded.
+window.addEventListener("DOMContentLoaded", () => {
+    // Small delay to ensure Wails bindings are initialized
+    setTimeout(() => {
+        window.go.gui.App.ShouldCheckForUpdates().then((shouldCheck) => {
+            if (!shouldCheck) return;
+            window.go.gui.App.CheckForUpdates().then((info) => {
+                if (info.available && !info.error) {
+                    showUpdateBanner(info);
+                }
+            });
         });
-    }
+    }, 1000);
 });
+
+function showUpdateBanner(info) {
+    const banner = document.createElement("div");
+    banner.className = "update-banner";
+    banner.innerHTML = `Update available: ${info.latest}
+        <a href="#" id="update-banner-link">View</a>
+        <button id="update-banner-dismiss">&times;</button>`;
+    document.getElementById("app").prepend(banner);
+
+    document.getElementById("update-banner-link").addEventListener("click", (e) => {
+        e.preventDefault();
+        if (info.downloadURL) {
+            window.runtime.BrowserOpenURL(info.downloadURL);
+        } else {
+            window.runtime.BrowserOpenURL(info.releaseURL);
+        }
+    });
+
+    document.getElementById("update-banner-dismiss").addEventListener("click", () => {
+        banner.remove();
+    });
+}
