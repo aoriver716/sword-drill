@@ -15,6 +15,8 @@ type FormattingOptions struct {
 type Config struct {
 	DefaultTranslation string            `json:"default_translation"`
 	BibleTextAPI       string            `json:"bible_text_api"`
+	APIBibleKey        string            `json:"api_bible_key,omitempty"`
+	APIBibleID         string            `json:"api_bible_id,omitempty"`
 	FormattingOptions  FormattingOptions `json:"formatting_options"`
 }
 

@@ -31,9 +31,12 @@ A clipboard-monitoring app that detects scripture references in copied text and 
 - [x] Implement `BibleAPIClient` (bible-api.com) — default online provider
 - [x] Wire lookup into clipboard callback to display scripture text
 - [x] Support a translation parameter (default: KJV)
-- [ ] Add unit tests for scripture text API implementations
+- [x] Add shared test suite for `BibleLookup` implementations (John 3:16 + Romans 8:28-30 multi-verse)
+- [x] Implement `APIBibleClient` (API.Bible) — alternate provider with 2,500+ translations
+- [x] API key injection via compile-time `-ldflags`, env var, or config file
+- [x] `Translations()` method on `BibleLookup` interface (static for bible-api.com, cached for API.Bible)
+- [x] `RefreshTranslations()` method for fetching/caching available translations from API.Bible
 - [ ] Implement local SQLite DB lookup (`BibleLookup` implementation)
-- [ ] *(Optional)* Implement API.Bible lookup (`BibleLookup` implementation)
 
 ### 5. GUI — Scripture Display
 - [x] Create a GUI window that listens for scripture detection events — **Wails v2** (Go + HTML/CSS/JS)

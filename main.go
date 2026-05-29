@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/aoriver716/sword-drill/gui"
 	"github.com/aoriver716/sword-drill/internal/config"
@@ -24,6 +25,9 @@ var (
 	cfg     config.Config
 	bible   lookup.BibleLookup
 	fmtOpts formatter.Options
+
+	// Set at compile time via: -ldflags "-X main.apiBibleKey=YOUR_KEY"
+	apiBibleKey string
 )
 
 func initConfig() {
@@ -33,7 +37,29 @@ func initConfig() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	bible = lookup.NewBibleAPIClient()
+	switch cfg.BibleTextAPI {
+	case "api.bible":
+		apiKey := apiBibleKey // compile-time default
+		if cfg.APIBibleKey != "" {
+			apiKey = cfg.APIBibleKey // config file overrides
+		}
+		if envKey := os.Getenv("API_BIBLE_KEY"); envKey != "" {
+			apiKey = envKey // env var wins
+		}
+		if apiKey == "" {
+			log.Fatal("API key required: set API_BIBLE_KEY env var, api_bible_key in config.json, or compile with -ldflags \"-X main.apiBibleKey=KEY\"")
+		}
+		bibleID := cfg.APIBibleID
+		if bibleID == "" {
+			bibleID = "de4e12af7f28f599-02" // default KJV
+		}
+		bible = lookup.NewAPIBibleClient(apiKey, bibleID)
+		log.Printf("Using API.Bible (bibleId=%s)", bibleID)
+	default:
+		bible = lookup.NewBibleAPIClient()
+		log.Println("Using bible-api.com")
+	}
+
 	fmtOpts = formatter.Options{
 		VerseByVerse:  cfg.FormattingOptions.VerseByVerse,
 		ShowVerseNums: cfg.FormattingOptions.ShowVerseNums,

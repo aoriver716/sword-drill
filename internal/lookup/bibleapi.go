@@ -97,3 +97,24 @@ func formatRefForAPI(ref detector.ScriptureRef) string {
 	}
 	return b.String()
 }
+
+// Translations returns the available Bible translations for bible-api.com.
+func (c *BibleAPIClient) Translations() ([]Translation, error) {
+	return []Translation{
+		{Name: "King James Version", Key: "kjv"},
+		{Name: "World English Bible", Key: "web"},
+		{Name: "Bible in Basic English", Key: "bbe"},
+		{Name: "American Standard Version", Key: "asv"},
+		{Name: "Young's Literal Translation", Key: "ylt"},
+		{Name: "Darby Bible", Key: "darby"},
+		{Name: "Webster's Bible", Key: "web_webster"},
+		{Name: "Clementine Vulgate", Key: "clementine"},
+		{Name: "Almeida Revised (Portuguese)", Key: "almeida"},
+		{Name: "Reina-Valera 1909 (Spanish)", Key: "rva"},
+	}, nil
+}
+
+// RefreshTranslations is a no-op for bible-api.com (translations are hardcoded).
+func (c *BibleAPIClient) RefreshTranslations() error {
+	return nil
+}

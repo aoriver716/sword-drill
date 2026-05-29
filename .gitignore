@@ -18,4 +18,8 @@ go.work
 .idea/
 .vscode/
 *.swp
+
+# Config (may contain API keys)
+.api_bible_key
+.apibible_translations.json
 *.swo

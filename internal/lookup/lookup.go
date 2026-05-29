@@ -21,8 +21,16 @@ type LookupResult struct {
 	StatusCode  int     // HTTP status code (0 for local sources)
 }
 
+// Translation represents an available Bible translation.
+type Translation struct {
+	Name string // display name shown to the user
+	Key  string // key used when querying the API
+}
+
 // BibleLookup is the interface for retrieving scripture text.
 // Implementations may use a remote API, local database, etc.
 type BibleLookup interface {
 	Lookup(ref detector.ScriptureRef, translation string) (LookupResult, error)
+	Translations() ([]Translation, error)
+	RefreshTranslations() error
 }

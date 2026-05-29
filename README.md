@@ -29,6 +29,11 @@ Build:
 CGO_ENABLED=1 go build -tags "desktop,production" -o sword-drill.exe .
 ```
 
+To embed an [API.Bible](https://scripture.api.bible) key at compile time:
+```sh
+CGO_ENABLED=1 go build -tags "desktop,production" -ldflags "-X main.apiBibleKey=YOUR_KEY" -o sword-drill.exe .
+```
+
 For development builds (with console output visible):
 ```sh
 CGO_ENABLED=1 go build -tags desktop -o sword-drill.exe .
@@ -46,10 +51,12 @@ Copy any text containing a scripture reference (e.g. `John 3:16`, `Gen. 1:1`, `R
 
 - **Scripture Browser** — Tabbed chapter viewer with full chapter text, verse-level highlighting of referenced passages, and book/chapter navigation toolbar
 - **Scripture Log** — Scrollable log of all detected references with copy-all and clear buttons
+- **New Tab** — Open Genesis 1 with File → New Tab or Ctrl+N
 - **Pause/Resume** — Toggle clipboard processing from the menu bar
 - **Draggable Tabs** — Reorder browser tabs by drag and drop
 - **Resizable Panels** — Adjust the split between browser and log
 - **Configurable Formatting** — Verse-by-verse or paragraph mode, optional verse numbers
+- **Multiple Bible APIs** — Supports [bible-api.com](https://bible-api.com) and [API.Bible](https://scripture.api.bible) with pluggable `BibleLookup` interface
 
 Close the window or use File → Quit (Ctrl+Q) to exit.
 
@@ -60,7 +67,7 @@ Settings are read from `config.json` in the working directory. If the file doesn
 ```json
 {
   "default_translation": "kjv",
-  "bible_text_api": "bible-api.com",
+  "bible_text_api": "api.bible",
   "formatting_options": {
     "verse_by_verse": false,
     "show_verse_nums": false
@@ -71,9 +78,17 @@ Settings are read from `config.json` in the working directory. If the file doesn
 | Key | Description | Default |
 |---|---|---|
 | `default_translation` | Bible translation ID (e.g. `kjv`, `web`) | `kjv` |
-| `bible_text_api` | API source for scripture text | `bible-api.com` |
+| `bible_text_api` | API source: `bible-api.com` or `api.bible` | `bible-api.com` |
 | `formatting_options.verse_by_verse` | Display each verse on its own line | `false` |
 | `formatting_options.show_verse_nums` | Prefix each verse with its number | `false` |
+
+### API.Bible Setup
+
+To use [API.Bible](https://scripture.api.bible) (2,500+ translations), sign up at [api.bible/sign-up](https://api.bible/sign-up) for a free API key. Provide the key via one of these methods (highest priority first):
+
+1. **Environment variable**: `API_BIBLE_KEY=your-key ./sword-drill.exe`
+2. **Config file**: add `"api_bible_key": "your-key"` to `config.json`
+3. **Compile-time flag**: build with `-ldflags "-X main.apiBibleKey=your-key"`
 
 ## Project Plan
 
