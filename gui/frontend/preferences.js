@@ -56,7 +56,6 @@ export async function openPreferences() {
     pendingChanges = {};
     restartRequired = false;
     updateRestartNotice();
-    await window.go.gui.App.RefreshTranslations();
     await renderPreferences();
     prefsDialog.showModal();
 }

@@ -284,7 +284,16 @@ func (c *APIBibleClient) Translations() ([]Translation, error) {
 }
 
 // RefreshTranslations fetches available Bibles from API.Bible and caches them locally.
+// If a valid cache file already exists, the network call is skipped.
 func (c *APIBibleClient) RefreshTranslations() error {
+	// Skip if the cache already exists and is parseable.
+	if data, err := os.ReadFile(translationsCacheFile); err == nil {
+		var cached []Translation
+		if err := json.Unmarshal(data, &cached); err == nil && len(cached) > 0 {
+			return nil
+		}
+	}
+
 	reqURL := fmt.Sprintf("%s/bibles?language=eng", c.BaseURL)
 	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {

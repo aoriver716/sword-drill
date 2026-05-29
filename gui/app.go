@@ -119,6 +119,13 @@ func (a *App) Startup(ctx context.Context) {
 		a.registry.OnChange(func(cfg *config.Config) {
 			a.emitFormatOptions(cfg)
 		})
+		if bible := a.registry.BibleLookup(); bible != nil {
+			go func() {
+				if err := bible.RefreshTranslations(); err != nil {
+					log.Printf("WARNING: failed to refresh translations on startup: %v", err)
+				}
+			}()
+		}
 	}
 }
 
