@@ -559,25 +559,12 @@ document.addEventListener("click", (e) => {
     }
 });
 
-// Keyboard shortcuts
-document.addEventListener("keydown", (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "q") {
-        e.preventDefault();
-        saveAndQuit();
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === "n") {
-        e.preventDefault();
-        newTab();
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === "w") {
-        e.preventDefault();
-        if (activeTab != null) closeTab(activeTab);
-    }
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "T") {
-        e.preventDefault();
-        reopenClosedTab();
-    }
-});
+// Keyboard shortcuts (registered via KeybindManager from keybinds.js)
+KeybindManager.register("q", saveAndQuit);
+KeybindManager.register("n", newTab);
+KeybindManager.register("w", () => { if (activeTab != null) closeTab(activeTab); });
+KeybindManager.register("t", reopenClosedTab, { shift: true });
+KeybindManager.init();
 
 // Intercept all copy events from within the app to prevent clipboard re-processing,
 // except from the sample input box (which should trigger processing).
