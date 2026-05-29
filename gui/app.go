@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"sync/atomic"
 
 	"github.com/aoriver716/sword-drill/internal/config"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -37,11 +38,12 @@ type focusTab struct {
 }
 
 // TabStateEntry describes a single tab for persistence.
+// Array order encodes position; closed tabs include a Position hint for reopening.
 type TabStateEntry struct {
 	Book        string `json:"book"`
 	Chapter     int    `json:"chapter"`
 	Translation string `json:"translation"`
-	Position    int    `json:"position"`
+	Position    int    `json:"position,omitempty"`
 }
 
 // TabsFile is the on-disk format for tab persistence.
@@ -60,7 +62,7 @@ type App struct {
 	skipNext      bool
 	paused        bool
 	registry      *config.Registry
-	closing       bool
+	closing       atomic.Bool
 }
 
 // NewApp creates a new App instance with the given chapter lookup callback and config registry.
@@ -319,9 +321,7 @@ func (a *App) CopyText(text string) {
 
 // Quit closes the application.
 func (a *App) Quit() {
-	a.mu.Lock()
-	a.closing = true
-	a.mu.Unlock()
+	a.closing.Store(true)
 	runtime.Quit(a.ctx)
 }
 
@@ -329,12 +329,9 @@ func (a *App) Quit() {
 // It returns true to prevent close (so the frontend can save state first),
 // unless Quit() was called explicitly (closing flag set).
 func (a *App) BeforeClose(ctx context.Context) bool {
-	a.mu.Lock()
-	if a.closing {
-		a.mu.Unlock()
+	if a.closing.Load() {
 		return false
 	}
-	a.mu.Unlock()
 	runtime.EventsEmit(ctx, "app:beforeClose")
 	return true
 }

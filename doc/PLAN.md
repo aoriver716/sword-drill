@@ -63,8 +63,8 @@ A clipboard-monitoring app that detects scripture references in copied text and 
 - [x] Preferences dialog (File → Preferences) with OK/Cancel/Apply and Reset to Defaults
 - [x] Dynamic translation dropdown populated from active Bible API
 - [x] English-only translation filtering for API.Bible
-- [ ] Session persistence (save/restore open tabs and panel layout on restart)
-- [ ] Reopen closed tabs with Ctrl+Shift+T
+- [x] Session persistence (save/restore open tabs and panel layout on restart)
+- [x] Reopen closed tabs with Ctrl+Shift+T
 - [ ] User highlighting in Scripture Browser (select text to highlight with custom colors)
 - [ ] Annotations in Scripture Browser (attach notes to verses)
 - [ ] Cross-reference and footnote support

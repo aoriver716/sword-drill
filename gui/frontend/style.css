@@ -313,7 +313,43 @@ body {
     height: 100%;
     color: #999;
     font-style: italic;
-    user-select: none;
+}
+
+.sample-box {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sample-input {
+    padding: 4px 8px;
+    background: #fff;
+    border: 1px solid #888;
+    border-radius: 3px;
+    color: #333;
+    font-family: inherit;
+    font-size: inherit;
+    outline: none;
+    resize: none;
+    min-width: 240px;
+}
+
+.sample-input:focus {
+    border-color: #4a90d9;
+}
+
+.sample-copy {
+    background: transparent;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.sample-copy:hover {
+    color: #333;
 }
 
 .tab-page {
