@@ -55,11 +55,14 @@ A clipboard-monitoring app that detects scripture references in copied text and 
 - [x] Wire all components together end-to-end
 - [x] Error handling and edge cases (invalid references, API failures, empty clipboard)
 - [x] JSON config file with defaults fallback
+- [x] Schema-driven config registry with declarative lookup providers
 - [x] ScriptureDisplay interface decoupling GUI from core logic
 - [ ] System tray / background operation support
 
 ### 7. Future Enhancements
-- [ ] Preferences menu (formatting options, translation, theme)
+- [x] Preferences dialog (File → Preferences) with OK/Cancel/Apply and Reset to Defaults
+- [x] Dynamic translation dropdown populated from active Bible API
+- [x] English-only translation filtering for API.Bible
 - [ ] Session persistence (save/restore open tabs and panel layout on restart)
 - [ ] Reopen closed tabs with Ctrl+Shift+T
 - [ ] User highlighting in Scripture Browser (select text to highlight with custom colors)

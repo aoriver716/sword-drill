@@ -52,6 +52,7 @@ Copy any text containing a scripture reference (e.g. `John 3:16`, `Gen. 1:1`, `R
 - **Scripture Browser** — Navigate and read scripture in context.
 - **Scripture Log** — Scrollable log of all detected references.
 - **Multiple Bible APIs** — Supports [bible-api.com](https://bible-api.com) and [API.Bible](https://scripture.api.bible)
+- **Preferences** — Configure Bible API, translation, and formatting via File → Preferences.
 
 Close the window or use File → Quit (Ctrl+Q) to exit.
 
