@@ -11,4 +11,5 @@ type Config struct {
 	DefaultTranslation string            `json:"default_translation"`
 	BibleTextAPI       string            `json:"bible_text_api"`
 	FormattingOptions  FormattingOptions `json:"formatting_options"`
+	TabOpenBehavior    string            `json:"tab_open_behavior"`
 }

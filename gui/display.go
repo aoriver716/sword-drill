@@ -18,8 +18,8 @@ type ScriptureResult struct {
 }
 
 // ChapterLookupFunc is called by the display to request chapter verse data
-// for a given book and chapter.
-type ChapterLookupFunc func(book string, chapter int) ([]ChapterVerse, error)
+// for a given book, chapter, and translation.
+type ChapterLookupFunc func(book string, chapter int, translation string) ([]ChapterVerse, error)
 
 // ScriptureDisplay is the interface main.go uses to push scripture to the GUI.
 type ScriptureDisplay interface {

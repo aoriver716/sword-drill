@@ -254,6 +254,16 @@ body {
     white-space: nowrap;
 }
 
+#browser-toolbar #translation-select {
+    margin-left: auto;
+    font-size: 13px;
+    padding: 2px 4px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background: #fff;
+    max-width: 200px;
+}
+
 .tab {
     display: flex;
     align-items: center;
@@ -552,6 +562,15 @@ body {
     align-items: center;
     padding: 12px 18px;
     border-top: 1px solid #e0e0e0;
+}
+
+.prefs-restart-notice {
+    padding: 8px 18px;
+    background: #fff8e1;
+    border-top: 1px solid #ffe082;
+    color: #795548;
+    font-size: 12px;
+    text-align: center;
 }
 
 .prefs-footer-right {

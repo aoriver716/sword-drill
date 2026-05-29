@@ -36,13 +36,13 @@ func initConfig() {
 	bible = registry.BibleLookup()
 }
 
-func lookupChapter(book string, chapter int) ([]gui.ChapterVerse, error) {
+func lookupChapter(book string, chapter int, translation string) ([]gui.ChapterVerse, error) {
 	ref := detector.ScriptureRef{
 		Book:         book,
 		StartChapter: chapter,
 		EndChapter:   chapter,
 	}
-	result, err := bible.Lookup(ref, registry.Config().DefaultTranslation)
+	result, err := bible.Lookup(ref, translation)
 	if err != nil {
 		return nil, err
 	}
@@ -92,10 +92,7 @@ func watchClipboard(ctx context.Context, display gui.ScriptureDisplay) {
 				}
 				results = append(results, gui.ScriptureResult{
 					Reference:  lr.Reference,
-					Text:       formatter.Format(lr, formatter.Options{
-						VerseByVerse:  registry.Config().FormattingOptions.VerseByVerse,
-						ShowVerseNums: registry.Config().FormattingOptions.ShowVerseNums,
-					}),
+					Text:       formatter.Format(lr, registry.Config()),
 					Book:       ref.Book,
 					Chapter:    ref.StartChapter,
 					StartVerse: ref.StartVerse,

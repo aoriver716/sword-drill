@@ -35,14 +35,15 @@ type Option struct {
 
 // FieldSchema describes a single config field for the preferences UI.
 type FieldSchema struct {
-	Key         string     `json:"key"`
-	Label       string     `json:"label"`
-	Description string     `json:"description,omitempty"`
-	Group       string     `json:"group"`
-	Widget      WidgetType `json:"widget"`
-	Value       any        `json:"value"`
-	Default     any        `json:"default"`
-	Options     []Option   `json:"options,omitempty"`
+	Key             string     `json:"key"`
+	Label           string     `json:"label"`
+	Description     string     `json:"description,omitempty"`
+	Group           string     `json:"group"`
+	Widget          WidgetType `json:"widget"`
+	Value           any        `json:"value"`
+	Default         any        `json:"default"`
+	Options         []Option   `json:"options,omitempty"`
+	RequiresRestart bool       `json:"requiresRestart,omitempty"`
 }
 
 // OptionsFunc returns dynamic options for a select/radio field.
@@ -50,16 +51,17 @@ type OptionsFunc func() []Option
 
 // FieldDef is the definition of a config field.
 type FieldDef struct {
-	Key         string
-	Label       string
-	Description string
-	Group       string
-	Widget      WidgetType
-	Default     any
-	Options     []Option    // static options (nil if dynamic)
-	OptionsFunc OptionsFunc // called at schema time if non-nil
-	Getter      func(*Config) any
-	Setter      func(*Config, any)
+	Key             string
+	Label           string
+	Description     string
+	Group           string
+	Widget          WidgetType
+	Default         any
+	Options         []Option    // static options (nil if dynamic)
+	OptionsFunc     OptionsFunc // called at schema time if non-nil
+	RequiresRestart bool
+	Getter          func(*Config) any
+	Setter          func(*Config, any)
 }
 
 // Registry holds all config field definitions and the current config.
@@ -68,6 +70,7 @@ type Registry struct {
 	providers []LookupProvider
 	cfg       Config
 	path      string
+	onChange  func(*Config)
 }
 
 // NewRegistry creates a registry that loads/saves from the given path.
@@ -202,17 +205,30 @@ func (r *Registry) Schema() []FieldSchema {
 			opts = r.providerOptions()
 		}
 		schemas[i] = FieldSchema{
-			Key:         f.Key,
-			Label:       f.Label,
-			Description: f.Description,
-			Group:       f.Group,
-			Widget:      f.Widget,
-			Value:       f.Getter(&r.cfg),
-			Default:     f.Default,
-			Options:     opts,
+			Key:             f.Key,
+			Label:           f.Label,
+			Description:     f.Description,
+			Group:           f.Group,
+			Widget:          f.Widget,
+			Value:           f.Getter(&r.cfg),
+			Default:         f.Default,
+			Options:         opts,
+			RequiresRestart: f.RequiresRestart,
 		}
 	}
 	return schemas
+}
+
+// OnChange registers a callback that fires whenever the config is updated.
+func (r *Registry) OnChange(fn func(*Config)) {
+	r.onChange = fn
+}
+
+// notifyChange calls the onChange callback if one is registered.
+func (r *Registry) notifyChange() {
+	if r.onChange != nil {
+		r.onChange(&r.cfg)
+	}
 }
 
 // Update sets a config field by key and saves to disk.
@@ -220,7 +236,11 @@ func (r *Registry) Update(key string, value any) error {
 	for _, f := range r.fields {
 		if f.Key == key {
 			f.Setter(&r.cfg, value)
-			return r.Save()
+			if err := r.Save(); err != nil {
+				return err
+			}
+			r.notifyChange()
+			return nil
 		}
 	}
 	return nil
@@ -231,7 +251,11 @@ func (r *Registry) ResetToDefaults() error {
 	r.cfg = Config{}
 	r.applyDefaults()
 	r.ensureAvailableProvider()
-	return r.Save()
+	if err := r.Save(); err != nil {
+		return err
+	}
+	r.notifyChange()
+	return nil
 }
 
 // applyDefaults sets all config fields to their registered default values.
