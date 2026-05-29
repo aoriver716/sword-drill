@@ -2,9 +2,12 @@ package gui
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"sync"
+	"sync/atomic"
 
 	"github.com/aoriver716/sword-drill/internal/config"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -34,6 +37,22 @@ type focusTab struct {
 	Highlight [][2]int `json:"highlight"`
 }
 
+// TabStateEntry describes a single tab for persistence.
+// Array order encodes position; closed tabs include a Position hint for reopening.
+type TabStateEntry struct {
+	Book        string `json:"book"`
+	Chapter     int    `json:"chapter"`
+	Translation string `json:"translation"`
+	Position    int    `json:"position,omitempty"`
+}
+
+// TabsFile is the on-disk format for tab persistence.
+type TabsFile struct {
+	Open      []TabStateEntry `json:"open"`
+	ActiveIdx int             `json:"activeIdx"`
+	Closed    []TabStateEntry `json:"closed"`
+}
+
 // App is the Wails application backend. It implements ScriptureDisplay.
 type App struct {
 	ctx           context.Context
@@ -43,6 +62,7 @@ type App struct {
 	skipNext      bool
 	paused        bool
 	registry      *config.Registry
+	closing       atomic.Bool
 }
 
 // NewApp creates a new App instance with the given chapter lookup callback and config registry.
@@ -301,5 +321,40 @@ func (a *App) CopyText(text string) {
 
 // Quit closes the application.
 func (a *App) Quit() {
+	a.closing.Store(true)
 	runtime.Quit(a.ctx)
+}
+
+// BeforeClose is called by Wails when the window is about to close.
+// It returns true to prevent close (so the frontend can save state first),
+// unless Quit() was called explicitly (closing flag set).
+func (a *App) BeforeClose(ctx context.Context) bool {
+	if a.closing.Load() {
+		return false
+	}
+	runtime.EventsEmit(ctx, "app:beforeClose")
+	return true
+}
+
+// SaveTabState writes the tab state to tabs.json.
+func (a *App) SaveTabState(state TabsFile) error {
+	data, err := json.MarshalIndent(state, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile("tabs.json", data, 0644)
+}
+
+// LoadTabState reads the tab state from tabs.json.
+func (a *App) LoadTabState() *TabsFile {
+	data, err := os.ReadFile("tabs.json")
+	if err != nil {
+		return nil
+	}
+	var state TabsFile
+	if err := json.Unmarshal(data, &state); err != nil {
+		log.Printf("Failed to parse tabs.json: %v", err)
+		return nil
+	}
+	return &state
 }

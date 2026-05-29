@@ -1,12 +1,23 @@
 // Scripture Browser state
+// Each tab: { state: {book, chapter, translation}, dom: {tabEl, page, pageHeader, pageBody}, verses }
 const tabs = {};
 let activeTab = null;
 let nextTabId = 1;
+const closedTabStack = [];
 
 const tabBar = document.getElementById("tab-bar");
 const tabContent = document.getElementById("tab-content");
 const browserToolbar = document.getElementById("browser-toolbar");
 const logEntries = document.getElementById("log-entries");
+
+// Sample box copy button — deliberately triggers clipboard processing
+const sampleCopy = document.querySelector(".sample-copy");
+if (sampleCopy) {
+    sampleCopy.addEventListener("click", () => {
+        const input = document.querySelector(".sample-input");
+        window.runtime.ClipboardSetText(input.value);
+    });
+}
 
 // Build the browser toolbar (created once, updates per active tab)
 const bookSelect = document.createElement("select");
@@ -71,6 +82,8 @@ translationSelect.title = "Translation";
 
 // Populate translation selector from Go backend
 let translationOptions = [];
+let translationsReady;
+const translationsLoaded = new Promise(resolve => { translationsReady = resolve; });
 (async function() {
     try {
         translationOptions = await window.go.gui.App.GetTranslations() || [];
@@ -78,6 +91,7 @@ let translationOptions = [];
     } catch (e) {
         console.error("Failed to get translations:", e);
     }
+    translationsReady();
 })();
 
 function populateTranslationSelect() {
@@ -92,48 +106,84 @@ function populateTranslationSelect() {
 
 browserToolbar.append(bookSelect, btnFirst, btnPrev, chapterInput, chapterTotal, btnNext, btnLast, translationSelect);
 
+// --- Tab state helpers ---
+
+// Get the display name for a tab's state.
+function tabName(state) {
+    return state.book + " " + state.chapter;
+}
+
+// Sync the toolbar to reflect the active tab's state.
 function updateToolbarState() {
     const tab = tabs[activeTab];
     if (!tab) return;
-    const maxCh = BOOK_CHAPTERS[tab.book] || 1;
-    bookSelect.value = tab.book;
-    chapterInput.value = tab.chapter;
+    const s = tab.state;
+    const maxCh = BOOK_CHAPTERS[s.book] || 1;
+    bookSelect.value = s.book;
+    chapterInput.value = s.chapter;
     chapterTotal.textContent = " / " + maxCh;
-    btnFirst.disabled = tab.chapter <= 1;
-    btnPrev.disabled = tab.chapter <= 1;
-    btnNext.disabled = tab.chapter >= maxCh;
-    btnLast.disabled = tab.chapter >= maxCh;
-    translationSelect.value = tab.translation;
+    btnFirst.disabled = s.chapter <= 1;
+    btnPrev.disabled = s.chapter <= 1;
+    btnNext.disabled = s.chapter >= maxCh;
+    btnLast.disabled = s.chapter >= maxCh;
+    translationSelect.value = s.translation;
 }
 
-async function navigateTo(book, chapter) {
-    const tab = tabs[activeTab];
+// Render a tab's DOM to match its current state and verses.
+function renderTab(tab) {
+    const name = tabName(tab.state);
+    tab.dom.pageHeader.textContent = name;
+    renderVerses(tab.dom.pageBody, tab.verses);
+    tab.dom.tabEl.querySelector("span:first-child").textContent = name;
+    tab.dom.tabEl.dataset.name = name;
+}
+
+// Update a tab's state and re-render. Fetches new verses if book/chapter/translation changed.
+async function updateTab(id, changes) {
+    const tab = tabs[id];
     if (!tab) return;
-    const maxCh = BOOK_CHAPTERS[book] || 1;
-    chapter = Math.max(1, Math.min(chapter, maxCh));
 
-    const newName = book + " " + chapter;
-    const oldName = tab.book + " " + tab.chapter;
-    if (newName === oldName) return;
+    const oldState = tab.state;
+    const newState = { ...oldState, ...changes };
 
-    try {
-        const verses = await window.go.gui.App.LoadChapter(book, chapter, tab.translation);
+    // Clamp chapter
+    if (changes.book || changes.chapter) {
+        const maxCh = BOOK_CHAPTERS[newState.book] || 1;
+        newState.chapter = Math.max(1, Math.min(newState.chapter, maxCh));
+    }
 
-        // Rename in Go backend
+    // No change
+    if (newState.book === oldState.book && newState.chapter === oldState.chapter && newState.translation === oldState.translation) {
+        return;
+    }
+
+    // Fetch new verses
+    const verses = await window.go.gui.App.LoadChapter(newState.book, newState.chapter, newState.translation);
+
+    // Notify Go backend of rename
+    const oldName = tabName(oldState);
+    const newName = tabName(newState);
+    if (oldName !== newName) {
         window.go.gui.App.RenameTab(oldName, newName);
+    }
 
-        // Update tab state
-        tab.book = book;
-        tab.chapter = chapter;
-        tab.verses = verses;
-        tab.pageHeader.textContent = newName;
-        renderVerses(tab.pageBody, verses);
-        tab.tabEl.querySelector("span:first-child").textContent = newName;
-        tab.tabEl.dataset.name = newName;
-
+    // Apply
+    tab.state = newState;
+    tab.verses = verses;
+    renderTab(tab);
+    if (activeTab === id) {
         updateToolbarState();
+    }
+}
+
+// --- Navigation ---
+
+async function navigateTo(book, chapter) {
+    if (activeTab == null) return;
+    try {
+        await updateTab(activeTab, { book, chapter });
     } catch (err) {
-        console.error("Failed to load chapter:", err);
+        console.error("Failed to navigate:", err);
     }
 }
 
@@ -143,24 +193,24 @@ bookSelect.addEventListener("change", () => {
 
 btnFirst.addEventListener("click", () => {
     const tab = tabs[activeTab];
-    if (tab) navigateTo(tab.book, 1);
+    if (tab) navigateTo(tab.state.book, 1);
 });
 
 btnPrev.addEventListener("click", () => {
     const tab = tabs[activeTab];
-    if (tab) navigateTo(tab.book, tab.chapter - 1);
+    if (tab) navigateTo(tab.state.book, tab.state.chapter - 1);
 });
 
 btnNext.addEventListener("click", () => {
     const tab = tabs[activeTab];
-    if (tab) navigateTo(tab.book, tab.chapter + 1);
+    if (tab) navigateTo(tab.state.book, tab.state.chapter + 1);
 });
 
 btnLast.addEventListener("click", () => {
     const tab = tabs[activeTab];
     if (tab) {
-        const maxCh = BOOK_CHAPTERS[tab.book] || 1;
-        navigateTo(tab.book, maxCh);
+        const maxCh = BOOK_CHAPTERS[tab.state.book] || 1;
+        navigateTo(tab.state.book, maxCh);
     }
 });
 
@@ -169,7 +219,7 @@ chapterInput.addEventListener("keydown", (e) => {
         const tab = tabs[activeTab];
         if (tab) {
             const ch = parseInt(chapterInput.value, 10);
-            if (!isNaN(ch)) navigateTo(tab.book, ch);
+            if (!isNaN(ch)) navigateTo(tab.state.book, ch);
         }
     }
 });
@@ -178,27 +228,24 @@ chapterInput.addEventListener("blur", () => {
     const tab = tabs[activeTab];
     if (tab) {
         const ch = parseInt(chapterInput.value, 10);
-        if (!isNaN(ch) && ch !== tab.chapter) {
-            navigateTo(tab.book, ch);
+        if (!isNaN(ch) && ch !== tab.state.chapter) {
+            navigateTo(tab.state.book, ch);
         } else {
-            chapterInput.value = tab.chapter;
+            chapterInput.value = tab.state.chapter;
         }
     }
 });
 
 translationSelect.addEventListener("change", async () => {
+    if (activeTab == null) return;
     const tab = tabs[activeTab];
-    if (!tab) return;
     const newTranslation = translationSelect.value;
-    if (newTranslation === tab.translation) return;
+    if (newTranslation === tab.state.translation) return;
     try {
-        const verses = await window.go.gui.App.LoadChapter(tab.book, tab.chapter, newTranslation);
-        tab.translation = newTranslation;
-        tab.verses = verses;
-        renderVerses(tab.pageBody, verses);
+        await updateTab(activeTab, { translation: newTranslation });
     } catch (err) {
         console.error("Failed to change translation:", err);
-        translationSelect.value = tab.translation;
+        translationSelect.value = tab.state.translation;
     }
 });
 
@@ -218,7 +265,7 @@ let formatOpts = { verseByVerse: false, showVerseNums: false };
 window.runtime.EventsOn("config:formatChanged", (opts) => {
     formatOpts = opts;
     for (const tab of Object.values(tabs)) {
-        renderVerses(tab.pageBody, tab.verses);
+        renderVerses(tab.dom.pageBody, tab.verses);
     }
 });
 
@@ -285,20 +332,19 @@ window.runtime.EventsOn("log:append", (entry) => {
     logEntries.scrollTop = logEntries.scrollHeight;
 });
 
-// Create a new browser tab with the given name, verses, optional highlight ranges, and translation
-function createTab(name, verses, highlight, translation) {
-    const tabId = nextTabId++;
+// --- Tab creation ---
 
-    // Parse book and chapter from tab name (e.g. "Genesis 1", "1 Chronicles 15")
-    const match = name.match(/^(.+)\s+(\d+)$/);
-    const book = match ? match[1] : name;
-    const chapter = match ? parseInt(match[2], 10) : 1;
+// Create a new browser tab from state {book, chapter, translation} and verses.
+function createTab(state, verses, highlight) {
+    const tabId = nextTabId++;
 
     // Hide placeholder
     const placeholder = tabContent.querySelector(".placeholder");
     if (placeholder) {
         placeholder.style.display = "none";
     }
+
+    const name = tabName(state);
 
     // Create tab button
     const tabEl = document.createElement("div");
@@ -371,7 +417,11 @@ function createTab(name, verses, highlight, translation) {
     page.appendChild(pageBody);
     tabContent.appendChild(page);
 
-    tabs[tabId] = { tabEl, page, pageHeader, pageBody, book, chapter, verses, translation };
+    tabs[tabId] = {
+        state: { ...state },
+        dom: { tabEl, page, pageHeader, pageBody },
+        verses,
+    };
     selectTab(tabId);
     highlightVerses(pageBody, highlight);
     return tabId;
@@ -379,14 +429,17 @@ function createTab(name, verses, highlight, translation) {
 
 // Listen for browser tab events from Go backend
 window.runtime.EventsOn("browser:openTab", (tab) => {
-    createTab(tab.name, tab.verses, tab.highlight, tab.translation);
+    // Parse book and chapter from name
+    const match = tab.name.match(/^(.+)\s+(\d+)$/);
+    const book = match ? match[1] : tab.name;
+    const chapter = match ? parseInt(match[2], 10) : 1;
+    createTab({ book, chapter, translation: tab.translation }, tab.verses, tab.highlight);
 });
 
 // Find a tab by its display name (book + chapter). Returns the ID or null.
 function findTabByName(name) {
     for (const [id, tab] of Object.entries(tabs)) {
-        const tabName = tab.book + " " + tab.chapter;
-        if (tabName === name) return Number(id);
+        if (tabName(tab.state) === name) return Number(id);
     }
     return null;
 }
@@ -396,7 +449,7 @@ window.runtime.EventsOn("browser:focusTab", (data) => {
     const id = findTabByName(data.name);
     if (id == null) return;
     selectTab(id);
-    highlightVerses(tabs[id].pageBody, data.highlight);
+    highlightVerses(tabs[id].dom.pageBody, data.highlight);
 });
 
 function selectTab(id) {
@@ -404,14 +457,14 @@ function selectTab(id) {
 
     // Deselect previous
     for (const [key, val] of Object.entries(tabs)) {
-        val.tabEl.classList.remove("active");
-        val.page.classList.remove("active");
+        val.dom.tabEl.classList.remove("active");
+        val.dom.page.classList.remove("active");
     }
 
     // Select new
     if (tabs[id]) {
-        tabs[id].tabEl.classList.add("active");
-        tabs[id].page.classList.add("active");
+        tabs[id].dom.tabEl.classList.add("active");
+        tabs[id].dom.page.classList.add("active");
         activeTab = id;
         browserToolbar.classList.add("visible");
         updateToolbarState();
@@ -422,13 +475,19 @@ function closeTab(id) {
     const tab = tabs[id];
     if (!tab) return;
 
-    tab.tabEl.remove();
-    tab.page.remove();
+    // Record position before removing
+    const tabEls = Array.from(tabBar.children);
+    const position = tabEls.indexOf(tab.dom.tabEl);
+
+    // Push state + position to closed stack
+    closedTabStack.push({ ...tab.state, position });
+
+    tab.dom.tabEl.remove();
+    tab.dom.page.remove();
     delete tabs[id];
 
     // Notify Go backend
-    const tabName = tab.book + " " + tab.chapter;
-    window.go.gui.App.CloseTab(tabName);
+    window.go.gui.App.CloseTab(tabName(tab.state));
 
     // Select another tab or show placeholder
     const remaining = Object.keys(tabs);
@@ -471,7 +530,7 @@ async function newTab() {
         const verses = await window.go.gui.App.LoadChapter(book, chapter, translation);
         const name = book + " " + chapter;
         window.go.gui.App.RenameTab("", name);
-        createTab(name, verses, [], translation);
+        createTab({ book, chapter, translation }, verses, []);
     } catch (err) {
         console.error("Failed to open new tab:", err);
     }
@@ -490,7 +549,7 @@ document.getElementById("menu-preferences").addEventListener("click", () => {
 
 document.getElementById("menu-quit").addEventListener("click", () => {
     document.activeElement.blur();
-    window.go.gui.App.Quit();
+    saveAndQuit();
 });
 
 // Close menu popup when clicking outside
@@ -500,11 +559,11 @@ document.addEventListener("click", (e) => {
     }
 });
 
-// Ctrl+Q shortcut
+// Keyboard shortcuts
 document.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "q") {
         e.preventDefault();
-        window.go.gui.App.Quit();
+        saveAndQuit();
     }
     if ((e.ctrlKey || e.metaKey) && e.key === "n") {
         e.preventDefault();
@@ -514,10 +573,16 @@ document.addEventListener("keydown", (e) => {
         e.preventDefault();
         if (activeTab != null) closeTab(activeTab);
     }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "T") {
+        e.preventDefault();
+        reopenClosedTab();
+    }
 });
 
-// Intercept all copy events from within the app to prevent clipboard re-processing
-document.addEventListener("copy", () => {
+// Intercept all copy events from within the app to prevent clipboard re-processing,
+// except from the sample input box (which should trigger processing).
+document.addEventListener("copy", (e) => {
+    if (e.target.closest(".sample-box")) return;
     window.go.gui.App.SkipNext();
 });
 
@@ -766,3 +831,118 @@ function createControl(field) {
             return null;
     }
 }
+
+// --- Tab Persistence ---
+
+// Get the ordered list of open tab states.
+function getOpenTabState() {
+    const tabEls = Array.from(tabBar.children);
+    return tabEls.map(el => {
+        const tab = tabs[Number(el.dataset.tabId)];
+        return tab ? { ...tab.state } : null;
+    }).filter(Boolean);
+}
+
+// Get the index of the active tab in DOM order.
+function getActiveTabIndex() {
+    if (activeTab == null) return -1;
+    const tab = tabs[activeTab];
+    if (!tab) return -1;
+    const tabEls = Array.from(tabBar.children);
+    return tabEls.indexOf(tab.dom.tabEl);
+}
+
+// Save tab state to backend and quit.
+async function saveAndQuit() {
+    try {
+        await window.go.gui.App.SaveTabState({
+            open: getOpenTabState(),
+            activeIdx: getActiveTabIndex(),
+            closed: closedTabStack,
+        });
+    } catch (err) {
+        console.error("Failed to save tab state:", err);
+    }
+    window.go.gui.App.Quit();
+}
+
+// Listen for window close (X button) — save then quit.
+window.runtime.EventsOn("app:beforeClose", async () => {
+    await saveAndQuit();
+});
+
+// Validate a translation key. Returns the key if valid, or the default translation.
+async function validateTranslation(translation) {
+    if (translationOptions.length > 0 && !translationOptions.some(t => t.value === translation)) {
+        return await window.go.gui.App.GetDefaultTranslation();
+    }
+    return translation;
+}
+
+// Reopen the most recently closed tab.
+async function reopenClosedTab() {
+    if (closedTabStack.length === 0) return;
+    const entry = closedTabStack.pop();
+
+    const translation = await validateTranslation(entry.translation);
+
+    try {
+        const verses = await window.go.gui.App.LoadChapter(entry.book, entry.chapter, translation);
+        const tabId = createTab({ book: entry.book, chapter: entry.chapter, translation }, verses, []);
+
+        // Reinsert at original position
+        const tab = tabs[tabId];
+        const tabEls = Array.from(tabBar.children);
+        const clampedPos = Math.min(entry.position, tabEls.length - 1);
+        if (clampedPos < tabEls.length - 1) {
+            tabBar.insertBefore(tab.dom.tabEl, tabBar.children[clampedPos]);
+        }
+    } catch (err) {
+        console.error("Failed to reopen tab:", err);
+    }
+}
+
+// Restore tabs from saved state on startup.
+async function restoreTabState() {
+    const state = await window.go.gui.App.LoadTabState();
+    if (!state) return;
+
+    // Restore closed stack
+    if (state.closed) {
+        for (const entry of state.closed) {
+            closedTabStack.push(entry);
+        }
+    }
+
+    // Restore open tabs in order (array order IS the position)
+    if (state.open && state.open.length > 0) {
+        const tabIds = [];
+
+        for (const entry of state.open) {
+            const translation = await validateTranslation(entry.translation);
+
+            try {
+                const verses = await window.go.gui.App.LoadChapter(entry.book, entry.chapter, translation);
+                const tabId = createTab({ book: entry.book, chapter: entry.chapter, translation }, verses, []);
+                tabIds.push(tabId);
+            } catch (err) {
+                console.error("Failed to restore tab:", entry, err);
+            }
+        }
+
+        // Select the previously active tab
+        if (state.activeIdx >= 0 && state.activeIdx < tabIds.length) {
+            selectTab(tabIds[state.activeIdx]);
+        }
+    }
+}
+
+// Kick off tab restoration after translations are loaded
+(async function() {
+    await translationsLoaded;
+    try {
+        await restoreTabState();
+    } catch (e) {
+        console.error("Failed to restore tab state:", e);
+    }
+})();
