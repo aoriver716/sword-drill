@@ -13,7 +13,8 @@ import (
 )
 
 // apiKey is the API.Bible key, set at compile time via:
-//   -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=YOUR_KEY"
+//
+//	-ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=YOUR_KEY"
 var apiKey string
 
 // APIKeyAvailable returns true if an API.Bible key was compiled in.
@@ -89,10 +90,10 @@ func (c *APIBibleClient) Lookup(ref detector.ScriptureRef, translation string) (
 
 // jsonContentNode represents a node in the API.Bible JSON content tree.
 type jsonContentNode struct {
-	Type  string            `json:"type"`
-	Text  string            `json:"text"`
+	Type  string                 `json:"type"`
+	Text  string                 `json:"text"`
 	Attrs map[string]interface{} `json:"attrs"`
-	Items []jsonContentNode `json:"items"`
+	Items []jsonContentNode      `json:"items"`
 }
 
 // parseVersesFromJSON extracts verses from API.Bible JSON content.
@@ -307,15 +308,47 @@ func (c *APIBibleClient) RefreshTranslations() error {
 			ID           string `json:"id"`
 			Name         string `json:"name"`
 			Abbreviation string `json:"abbreviation"`
+			Description  string `json:"description"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
 		return fmt.Errorf("api.bible translations response decode failed: %w", err)
 	}
 
-	translations := make([]Translation, len(apiResp.Data))
-	for i, b := range apiResp.Data {
-		translations[i] = Translation{Name: b.Name, Key: b.ID}
+	// De-duplicate translations that share the same base DBL ID (the part
+	// before the hyphen-suffix).  These are canon variants (Protestant,
+	// Catholic, Orthodox, Ecumenical) of the same translation text.
+	// Keep "Protestant" when available; otherwise keep whichever entry
+	// comes first so every translation is represented at least once.
+	type candidate struct {
+		Name        string
+		Key         string
+		Description string
+	}
+	best := make(map[string]candidate) // keyed by dblId (base ID)
+	order := []string{}                // preserve insertion order
+	for _, b := range apiResp.Data {
+		base := b.ID
+		if idx := strings.LastIndex(b.ID, "-"); idx != -1 {
+			base = b.ID[:idx]
+		}
+		prev, exists := best[base]
+		if !exists {
+			order = append(order, base)
+			best[base] = candidate{Name: b.Name, Key: b.ID, Description: b.Description}
+		} else if prev.Description != "Protestant" && b.Description == "Protestant" {
+			best[base] = candidate{Name: b.Name, Key: b.ID, Description: b.Description}
+		}
+	}
+
+	translations := make([]Translation, 0, len(best))
+	for _, base := range order {
+		cand := best[base]
+		// Only include translations that have all 66 Protestant-canon books.
+		if !c.hasFullCanon(cand.Key) {
+			continue
+		}
+		translations = append(translations, Translation{Name: cand.Name, Key: cand.Key})
 	}
 
 	data, err := json.MarshalIndent(translations, "", "  ")
@@ -327,4 +360,34 @@ func (c *APIBibleClient) RefreshTranslations() error {
 	}
 
 	return nil
+}
+
+// hasFullCanon returns true if the Bible has at least 66 books (full Protestant canon).
+func (c *APIBibleClient) hasFullCanon(bibleID string) bool {
+	reqURL := fmt.Sprintf("%s/bibles/%s/books", c.BaseURL, bibleID)
+	req, err := http.NewRequest("GET", reqURL, nil)
+	if err != nil {
+		return false
+	}
+	req.Header.Set("api-key", apiKey)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return false
+	}
+
+	var booksResp struct {
+		Data []struct {
+			ID string `json:"id"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&booksResp); err != nil {
+		return false
+	}
+	return len(booksResp.Data) >= 66
 }

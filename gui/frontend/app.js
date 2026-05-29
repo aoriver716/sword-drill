@@ -925,6 +925,9 @@ async function restoreTabState() {
                 const verses = await window.go.gui.App.LoadChapter(entry.book, entry.chapter, translation);
                 const tabId = createTab({ book: entry.book, chapter: entry.chapter, translation }, verses, []);
                 tabIds.push(tabId);
+                // Register restored tab in Go backend so HasTab() works.
+                const name = tabName(tabs[tabId].state);
+                window.go.gui.App.OpenTab(name);
             } catch (err) {
                 console.error("Failed to restore tab:", entry, err);
             }

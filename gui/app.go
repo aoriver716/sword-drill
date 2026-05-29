@@ -299,6 +299,13 @@ func (a *App) CloseTab(name string) {
 	delete(a.openTabs, name)
 }
 
+// OpenTab registers a tab as open in the backend tracking.
+func (a *App) OpenTab(name string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.openTabs[name] = true
+}
+
 // SetPaused is called from the frontend to toggle clipboard processing.
 func (a *App) SetPaused(paused bool) {
 	a.mu.Lock()
