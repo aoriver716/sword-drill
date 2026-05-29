@@ -5,5 +5,5 @@ import (
 )
 
 func TestBibleAPIClient(t *testing.T) {
-	RunLookupTests(t, NewBibleAPIClient())
+	RunLookupTests(t, NewBibleAPIClient(), "kjv")
 }

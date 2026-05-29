@@ -19,7 +19,8 @@ go.work
 .vscode/
 *.swp
 
-# Config (may contain API keys)
+# Config (generated at runtime)
+config.json
 .api_bible_key
 .apibible_translations.json
 *.swo

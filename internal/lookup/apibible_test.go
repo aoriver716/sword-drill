@@ -2,7 +2,6 @@ package lookup
 
 import (
 	"encoding/json"
-	"os"
 	"testing"
 
 	"github.com/aoriver716/sword-drill/internal/detector"
@@ -177,10 +176,10 @@ func TestBookNameToID(t *testing.T) {
 }
 
 func TestAPIBibleClient(t *testing.T) {
-	key := os.Getenv("API_BIBLE_KEY")
-	if key == "" {
-		t.Skip("API_BIBLE_KEY not set, skipping integration test")
+	if !APIKeyAvailable() {
+		t.Skip("API key not compiled in, skipping integration test")
 	}
-	client := NewAPIBibleClient(key, "de4e12af7f28f599-02")
-	RunLookupTests(t, client)
+	client := NewAPIBibleClient()
+	// API.Bible uses bibleID as the translation key; KJV = "de4e12af7f28f599-02"
+	RunLookupTests(t, client, "de4e12af7f28f599-02")
 }

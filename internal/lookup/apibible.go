@@ -12,20 +12,24 @@ import (
 	"github.com/aoriver716/sword-drill/internal/detector"
 )
 
+// apiKey is the API.Bible key, set at compile time via:
+//   -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=YOUR_KEY"
+var apiKey string
+
+// APIKeyAvailable returns true if an API.Bible key was compiled in.
+func APIKeyAvailable() bool {
+	return apiKey != ""
+}
+
 // APIBibleClient implements BibleLookup using API.Bible (rest.api.bible).
 type APIBibleClient struct {
-	APIKey     string
-	BibleID    string
 	BaseURL    string
 	HTTPClient *http.Client
 }
 
 // NewAPIBibleClient creates a client for API.Bible.
-// bibleID is the Bible version ID (e.g. "de4e12af7f28f599-02" for KJV).
-func NewAPIBibleClient(apiKey, bibleID string) *APIBibleClient {
+func NewAPIBibleClient() *APIBibleClient {
 	return &APIBibleClient{
-		APIKey:     apiKey,
-		BibleID:    bibleID,
 		BaseURL:    "https://rest.api.bible/v1",
 		HTTPClient: http.DefaultClient,
 	}
@@ -44,16 +48,17 @@ type apiBibleData struct {
 }
 
 // Lookup fetches scripture verses from API.Bible.
+// The translation parameter is the API.Bible bible ID (e.g. "de4e12af7f28f599-02" for KJV).
 func (c *APIBibleClient) Lookup(ref detector.ScriptureRef, translation string) (LookupResult, error) {
 	passageID := formatPassageID(ref)
 	reqURL := fmt.Sprintf("%s/bibles/%s/passages/%s?content-type=json&include-titles=false&include-verse-numbers=false&include-verse-spans=false",
-		c.BaseURL, c.BibleID, passageID)
+		c.BaseURL, translation, passageID)
 
 	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
 		return LookupResult{}, fmt.Errorf("api.bible request build failed: %w", err)
 	}
-	req.Header.Set("api-key", c.APIKey)
+	req.Header.Set("api-key", apiKey)
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
@@ -284,7 +289,7 @@ func (c *APIBibleClient) RefreshTranslations() error {
 	if err != nil {
 		return fmt.Errorf("api.bible translations request build failed: %w", err)
 	}
-	req.Header.Set("api-key", c.APIKey)
+	req.Header.Set("api-key", apiKey)
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
