@@ -31,7 +31,7 @@ CGO_ENABLED=1 go build -tags "desktop,production" -o sword-drill.exe .
 
 To embed an [API.Bible](https://scripture.api.bible) key at compile time:
 ```sh
-CGO_ENABLED=1 go build -tags "desktop,production" -ldflags "-X main.apiBibleKey=YOUR_KEY" -o sword-drill.exe .
+CGO_ENABLED=1 go build -tags "desktop,production" -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=YOUR_KEY" -o sword-drill.exe .
 ```
 
 For development builds (with console output visible):
@@ -49,14 +49,9 @@ Copy any text containing a scripture reference (e.g. `John 3:16`, `Gen. 1:1`, `R
 
 ### Features
 
-- **Scripture Browser** — Tabbed chapter viewer with full chapter text, verse-level highlighting of referenced passages, and book/chapter navigation toolbar
-- **Scripture Log** — Scrollable log of all detected references with copy-all and clear buttons
-- **New Tab** — Open Genesis 1 with File → New Tab or Ctrl+N
-- **Pause/Resume** — Toggle clipboard processing from the menu bar
-- **Draggable Tabs** — Reorder browser tabs by drag and drop
-- **Resizable Panels** — Adjust the split between browser and log
-- **Configurable Formatting** — Verse-by-verse or paragraph mode, optional verse numbers
-- **Multiple Bible APIs** — Supports [bible-api.com](https://bible-api.com) and [API.Bible](https://scripture.api.bible) with pluggable `BibleLookup` interface
+- **Scripture Browser** — Navigate and read scripture in context.
+- **Scripture Log** — Scrollable log of all detected references.
+- **Multiple Bible APIs** — Supports [bible-api.com](https://bible-api.com) and [API.Bible](https://scripture.api.bible)
 
 Close the window or use File → Quit (Ctrl+Q) to exit.
 
@@ -84,11 +79,13 @@ Settings are read from `config.json` in the working directory. If the file doesn
 
 ### API.Bible Setup
 
-To use [API.Bible](https://scripture.api.bible) (2,500+ translations), sign up at [api.bible/sign-up](https://api.bible/sign-up) for a free API key. Provide the key via one of these methods (highest priority first):
+Official releases come pre-compiled with an API.Bible key — no setup needed.
 
-1. **Environment variable**: `API_BIBLE_KEY=your-key ./sword-drill.exe`
-2. **Config file**: add `"api_bible_key": "your-key"` to `config.json`
-3. **Compile-time flag**: build with `-ldflags "-X main.apiBibleKey=your-key"`
+If you're building from source and want to use [API.Bible](https://scripture.api.bible) (2,500+ translations), sign up at [api.bible/sign-up](https://api.bible/sign-up) for a free API key, then build with:
+
+```sh
+CGO_ENABLED=1 go build -tags "desktop,production" -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=your-key" -o sword-drill.exe .
+```
 
 ## Project Plan
 

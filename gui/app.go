@@ -6,6 +6,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/aoriver716/sword-drill/internal/config"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -46,15 +47,40 @@ type App struct {
 	mu            sync.Mutex
 	skipNext      bool
 	paused        bool
-	fmtOpts       FormatOptions
+	registry      *config.Registry
 }
 
-// NewApp creates a new App instance with the given chapter lookup callback.
-func NewApp(chapterLookup ChapterLookupFunc) *App {
+// NewApp creates a new App instance with the given chapter lookup callback and config registry.
+func NewApp(chapterLookup ChapterLookupFunc, registry *config.Registry) *App {
 	return &App{
 		chapterLookup: chapterLookup,
 		openTabs:      make(map[string]bool),
+		registry:      registry,
 	}
+}
+
+// GetConfigSchema returns all config field schemas for the preferences UI.
+func (a *App) GetConfigSchema() []config.FieldSchema {
+	if a.registry == nil {
+		return nil
+	}
+	return a.registry.Schema()
+}
+
+// UpdateConfigField updates a config field by key and saves to disk.
+func (a *App) UpdateConfigField(key string, value any) error {
+	if a.registry == nil {
+		return nil
+	}
+	return a.registry.Update(key, value)
+}
+
+// ResetConfigToDefaults resets all config fields to defaults and saves.
+func (a *App) ResetConfigToDefaults() error {
+	if a.registry == nil {
+		return nil
+	}
+	return a.registry.ResetToDefaults()
 }
 
 // Startup is called when the Wails app starts.
@@ -67,14 +93,13 @@ func (a *App) Ctx() context.Context {
 	return a.ctx
 }
 
-// SetFormatOptions sets the formatting options.
-func (a *App) SetFormatOptions(opts FormatOptions) {
-	a.fmtOpts = opts
-}
-
 // GetFormatOptions returns the current formatting options (called from frontend).
 func (a *App) GetFormatOptions() FormatOptions {
-	return a.fmtOpts
+	cfg := a.registry.Config()
+	return FormatOptions{
+		VerseByVerse:  cfg.FormattingOptions.VerseByVerse,
+		ShowVerseNums: cfg.FormattingOptions.ShowVerseNums,
+	}
 }
 
 // ShowResults displays scripture lookup results and opens chapter tabs.

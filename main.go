@@ -5,7 +5,6 @@ import (
 	"embed"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/aoriver716/sword-drill/gui"
 	"github.com/aoriver716/sword-drill/internal/config"
@@ -22,48 +21,19 @@ import (
 var assets embed.FS
 
 var (
-	cfg     config.Config
-	bible   lookup.BibleLookup
-	fmtOpts formatter.Options
-
-	// Set at compile time via: -ldflags "-X main.apiBibleKey=YOUR_KEY"
-	apiBibleKey string
+	registry *config.Registry
+	bible    lookup.BibleLookup
 )
 
 func initConfig() {
-	var err error
-	cfg, err = config.Load("config.json")
-	if err != nil {
+	registry = config.NewRegistry("config.json")
+	config.RegisterFields(registry)
+
+	if err := registry.Load(); err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	switch cfg.BibleTextAPI {
-	case "api.bible":
-		apiKey := apiBibleKey // compile-time default
-		if cfg.APIBibleKey != "" {
-			apiKey = cfg.APIBibleKey // config file overrides
-		}
-		if envKey := os.Getenv("API_BIBLE_KEY"); envKey != "" {
-			apiKey = envKey // env var wins
-		}
-		if apiKey == "" {
-			log.Fatal("API key required: set API_BIBLE_KEY env var, api_bible_key in config.json, or compile with -ldflags \"-X main.apiBibleKey=KEY\"")
-		}
-		bibleID := cfg.APIBibleID
-		if bibleID == "" {
-			bibleID = "de4e12af7f28f599-02" // default KJV
-		}
-		bible = lookup.NewAPIBibleClient(apiKey, bibleID)
-		log.Printf("Using API.Bible (bibleId=%s)", bibleID)
-	default:
-		bible = lookup.NewBibleAPIClient()
-		log.Println("Using bible-api.com")
-	}
-
-	fmtOpts = formatter.Options{
-		VerseByVerse:  cfg.FormattingOptions.VerseByVerse,
-		ShowVerseNums: cfg.FormattingOptions.ShowVerseNums,
-	}
+	bible = registry.BibleLookup()
 }
 
 func lookupChapter(book string, chapter int) ([]gui.ChapterVerse, error) {
@@ -72,7 +42,7 @@ func lookupChapter(book string, chapter int) ([]gui.ChapterVerse, error) {
 		StartChapter: chapter,
 		EndChapter:   chapter,
 	}
-	result, err := bible.Lookup(ref, cfg.DefaultTranslation)
+	result, err := bible.Lookup(ref, registry.Config().DefaultTranslation)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +74,7 @@ func watchClipboard(ctx context.Context, display gui.ScriptureDisplay) {
 
 		var results []gui.ScriptureResult
 		for _, ref := range refs {
-			lr, err := bible.Lookup(ref, cfg.DefaultTranslation)
+			lr, err := bible.Lookup(ref, registry.Config().DefaultTranslation)
 			if err != nil {
 				log.Printf("ERROR %s: %v", ref, err)
 				results = append(results, gui.ScriptureResult{
@@ -122,7 +92,10 @@ func watchClipboard(ctx context.Context, display gui.ScriptureDisplay) {
 				}
 				results = append(results, gui.ScriptureResult{
 					Reference:  lr.Reference,
-					Text:       formatter.Format(lr, fmtOpts),
+					Text:       formatter.Format(lr, formatter.Options{
+						VerseByVerse:  registry.Config().FormattingOptions.VerseByVerse,
+						ShowVerseNums: registry.Config().FormattingOptions.ShowVerseNums,
+					}),
 					Book:       ref.Book,
 					Chapter:    ref.StartChapter,
 					StartVerse: ref.StartVerse,
@@ -145,11 +118,7 @@ func main() {
 		log.Fatalf("Failed to initialize clipboard: %v", err)
 	}
 
-	app := gui.NewApp(lookupChapter)
-	app.SetFormatOptions(gui.FormatOptions{
-		VerseByVerse:  cfg.FormattingOptions.VerseByVerse,
-		ShowVerseNums: cfg.FormattingOptions.ShowVerseNums,
-	})
+	app := gui.NewApp(lookupChapter, registry)
 
 	err = wails.Run(&options.App{
 		Title:  "Sword Drill",

@@ -8,7 +8,8 @@ import (
 )
 
 // RunLookupTests runs the shared test suite against any BibleLookup implementation.
-func RunLookupTests(t *testing.T, client BibleLookup) {
+// translation is the translation key to use (e.g. "kjv" for bible-api.com, a bibleID for API.Bible).
+func RunLookupTests(t *testing.T, client BibleLookup, translation string) {
 	t.Run("John 3:16 KJV", func(t *testing.T) {
 		ref := detector.ScriptureRef{
 			Book:         "John",
@@ -18,7 +19,7 @@ func RunLookupTests(t *testing.T, client BibleLookup) {
 			EndVerse:     16,
 		}
 
-		result, err := client.Lookup(ref, "kjv")
+		result, err := client.Lookup(ref, translation)
 		if err != nil {
 			t.Fatalf("Lookup failed: %v", err)
 		}
@@ -47,7 +48,7 @@ func RunLookupTests(t *testing.T, client BibleLookup) {
 			EndVerse:     30,
 		}
 
-		result, err := client.Lookup(ref, "kjv")
+		result, err := client.Lookup(ref, translation)
 		if err != nil {
 			t.Fatalf("Lookup failed: %v", err)
 		}
