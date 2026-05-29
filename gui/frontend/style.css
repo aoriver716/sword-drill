@@ -748,3 +748,103 @@ body {
 .prefs-btn-primary:hover {
     background: #3a7bc8;
 }
+
+/* About Dialog */
+.about-dialog {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    width: 360px;
+    padding: 0;
+    margin: auto;
+}
+
+.about-dialog[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+.about-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.about-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.about-title {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.about-body {
+    padding: 20px 18px;
+    text-align: center;
+}
+
+.about-version {
+    margin-bottom: 16px;
+    color: #555;
+}
+
+.about-update-status {
+    margin-bottom: 12px;
+    font-size: 13px;
+    min-height: 20px;
+}
+
+.about-update-status.update-available {
+    color: #2a7b2a;
+    font-weight: 500;
+}
+
+.about-update-status.update-current {
+    color: #555;
+}
+
+.about-update-status.update-error {
+    color: #c44;
+}
+
+.about-update-status a {
+    color: #4a90d9;
+    text-decoration: underline;
+}
+
+/* Update banner (startup notification) */
+.update-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: #e8f5e9;
+    border-bottom: 1px solid #a5d6a7;
+    font-size: 13px;
+    color: #2e7d32;
+    flex-shrink: 0;
+}
+
+.update-banner a {
+    color: #1565c0;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.update-banner button {
+    margin-left: auto;
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: #666;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.update-banner button:hover {
+    color: #333;
+}

@@ -21,6 +21,12 @@
                         <button class="menu-item" id="menu-quit">Quit<span class="menu-shortcut" data-shortcut="q"></span></button>
                     </div>
                 </div>
+                <div class="menu-dropdown">
+                    <button class="menu-trigger">Help</button>
+                    <div class="menu-popup">
+                        <button class="menu-item" id="menu-about">About Sword Drill</button>
+                    </div>
+                </div>
             </div>
             <div id="menu-toolbar">
             </div>
@@ -101,6 +107,19 @@
                     <button id="prefs-cancel" class="prefs-btn">Cancel</button>
                     <button id="prefs-apply" class="prefs-btn">Apply</button>
                 </div>
+            </div>
+        </dialog>
+
+        <!-- About Dialog -->
+        <dialog id="about-dialog" class="about-dialog">
+            <div class="about-header">
+                <span class="about-title">About Sword Drill</span>
+                <button id="about-close" class="prefs-close-btn">&times;</button>
+            </div>
+            <div class="about-body">
+                <p class="about-version">Version: <span id="about-version-text">dev</span></p>
+                <div id="about-update-status" class="about-update-status"></div>
+                <button id="about-check-updates" class="prefs-btn prefs-btn-primary">Check for Updates</button>
             </div>
         </dialog>
     </div>

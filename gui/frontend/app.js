@@ -4,6 +4,7 @@ import { register, init } from "./keybinds.js";
 import { saveAndQuit, reopenClosedTab, newTab } from "./persistence.js";
 import { closeTab } from "./tabs.js";
 import { openPreferences } from "./preferences.js";
+import { openAbout } from "./about.js";
 
 // Side-effect imports: these modules self-register their event listeners on import.
 import "./toolbar.js";
@@ -33,6 +34,11 @@ document.getElementById("menu-preferences").addEventListener("click", () => {
 document.getElementById("menu-quit").addEventListener("click", () => {
     document.activeElement.blur();
     saveAndQuit();
+});
+
+document.getElementById("menu-about").addEventListener("click", () => {
+    document.activeElement.blur();
+    openAbout();
 });
 
 // Close menu popup when clicking outside

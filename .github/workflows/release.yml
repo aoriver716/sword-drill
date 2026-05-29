@@ -35,7 +35,7 @@ jobs:
 
       - name: Build (Windows)
         if: matrix.os == 'windows-latest'
-        run: wails build -platform ${{ matrix.platform }} -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=${{ secrets.API_BIBLE_KEY }}" -o sword-drill.exe
+        run: wails build -platform ${{ matrix.platform }} -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=${{ secrets.API_BIBLE_KEY }} -X github.com/aoriver716/sword-drill/internal/updater.Version=${{ github.ref_name }}" -o sword-drill.exe
 
       - name: Rename Windows artifact
         if: matrix.os == 'windows-latest'
@@ -44,7 +44,7 @@ jobs:
 
       - name: Build (macOS)
         if: matrix.os == 'macos-latest'
-        run: wails build -platform ${{ matrix.platform }} -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=${{ secrets.API_BIBLE_KEY }}"
+        run: wails build -platform ${{ matrix.platform }} -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=${{ secrets.API_BIBLE_KEY }} -X github.com/aoriver716/sword-drill/internal/updater.Version=${{ github.ref_name }}"
 
       - name: Zip macOS app bundle
         if: matrix.os == 'macos-latest'

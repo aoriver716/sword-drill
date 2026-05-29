@@ -114,4 +114,12 @@ func RegisterFields(r *Registry) {
 		Getter: func(c *Config) any { return c.TabOpenBehavior },
 		Setter: func(c *Config, v any) { c.TabOpenBehavior, _ = v.(string) },
 	})
+
+	r.Register(FieldDef{
+		Key: "check_for_updates", Label: "Check for Updates on Startup", Group: "General",
+		Description: "Automatically check for new versions when the app starts",
+		Widget:      WidgetToggle, Default: true,
+		Getter:      func(c *Config) any { return c.CheckForUpdates },
+		Setter:      func(c *Config, v any) { c.CheckForUpdates, _ = v.(bool) },
+	})
 }
