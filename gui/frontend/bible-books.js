@@ -1,5 +1,5 @@
 // All 66 books of the Bible with their chapter counts.
-const BIBLE_BOOKS = [
+export const BIBLE_BOOKS = [
     { name: "Genesis", chapters: 50 },
     { name: "Exodus", chapters: 40 },
     { name: "Leviticus", chapters: 27 },
@@ -69,7 +69,7 @@ const BIBLE_BOOKS = [
 ];
 
 // Quick lookup: book name → chapter count
-const BOOK_CHAPTERS = {};
+export const BOOK_CHAPTERS = {};
 for (const b of BIBLE_BOOKS) {
     BOOK_CHAPTERS[b.name] = b.chapters;
 }
