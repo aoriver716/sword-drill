@@ -245,16 +245,16 @@ window.runtime.EventsOn("log:append", (entry) => {
     logEntries.scrollTop = logEntries.scrollHeight;
 });
 
-// Listen for browser tab events from Go backend
-window.runtime.EventsOn("browser:openTab", (tab) => {
-    if (tabs[tab.name]) {
-        selectTab(tab.name);
+// Create a new browser tab with the given name, verses, and optional highlight ranges
+function createTab(name, verses, highlight) {
+    if (tabs[name]) {
+        selectTab(name);
         return;
     }
 
     // Parse book and chapter from tab name (e.g. "Genesis 1", "1 Chronicles 15")
-    const match = tab.name.match(/^(.+)\s+(\d+)$/);
-    const book = match ? match[1] : tab.name;
+    const match = name.match(/^(.+)\s+(\d+)$/);
+    const book = match ? match[1] : name;
     const chapter = match ? parseInt(match[2], 10) : 1;
 
     // Hide placeholder
@@ -266,25 +266,25 @@ window.runtime.EventsOn("browser:openTab", (tab) => {
     // Create tab button
     const tabEl = document.createElement("div");
     tabEl.className = "tab";
-    tabEl.dataset.name = tab.name;
+    tabEl.dataset.name = name;
 
     const label = document.createElement("span");
-    label.textContent = tab.name;
-    label.addEventListener("click", () => selectTab(tab.name));
+    label.textContent = name;
+    label.addEventListener("click", () => selectTab(tabEl.dataset.name));
 
     const closeBtn = document.createElement("span");
     closeBtn.className = "close-btn";
     closeBtn.textContent = "✕";
     closeBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        closeTab(tab.name);
+        closeTab(tabEl.dataset.name);
     });
 
     // Middle-click to close
     tabEl.addEventListener("mousedown", (e) => {
         if (e.button === 1) {
             e.preventDefault();
-            closeTab(tab.name);
+            closeTab(tabEl.dataset.name);
         }
     });
 
@@ -292,7 +292,7 @@ window.runtime.EventsOn("browser:openTab", (tab) => {
     tabEl.draggable = true;
     tabEl.addEventListener("dragstart", (e) => {
         e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", tab.name);
+        e.dataTransfer.setData("text/plain", name);
         tabEl.classList.add("dragging");
     });
     tabEl.addEventListener("dragend", () => {
@@ -323,19 +323,24 @@ window.runtime.EventsOn("browser:openTab", (tab) => {
 
     const pageHeader = document.createElement("div");
     pageHeader.className = "tab-page-header";
-    pageHeader.textContent = tab.name;
+    pageHeader.textContent = name;
 
     const pageBody = document.createElement("div");
     pageBody.className = "tab-page-body";
-    renderVerses(pageBody, tab.verses);
+    renderVerses(pageBody, verses);
 
     page.appendChild(pageHeader);
     page.appendChild(pageBody);
     tabContent.appendChild(page);
 
-    tabs[tab.name] = { tabEl, page, pageHeader, pageBody, book, chapter, verses: tab.verses };
-    selectTab(tab.name);
-    highlightVerses(pageBody, tab.highlight);
+    tabs[name] = { tabEl, page, pageHeader, pageBody, book, chapter, verses };
+    selectTab(name);
+    highlightVerses(pageBody, highlight);
+}
+
+// Listen for browser tab events from Go backend
+window.runtime.EventsOn("browser:openTab", (tab) => {
+    createTab(tab.name, tab.verses, tab.highlight);
 });
 
 // Listen for focus+highlight events on existing tabs
@@ -408,14 +413,36 @@ document.getElementById("btn-clear").addEventListener("click", () => {
     logEntries.innerHTML = "";
 });
 
+// New tab: opens Genesis 1
+async function newTab() {
+    const name = "Genesis 1";
+    if (tabs[name]) {
+        selectTab(name);
+        return;
+    }
+    try {
+        const verses = await window.go.gui.App.LoadChapter("Genesis", 1);
+        window.go.gui.App.RenameTab("", name);
+        createTab(name, verses, []);
+    } catch (err) {
+        console.error("Failed to open new tab:", err);
+    }
+}
+
 // Menu bar
+document.getElementById("menu-new-tab").addEventListener("click", () => {
+    document.activeElement.blur();
+    newTab();
+});
+
 document.getElementById("menu-quit").addEventListener("click", () => {
+    document.activeElement.blur();
     window.go.gui.App.Quit();
 });
 
 // Close menu popup when clicking outside
 document.addEventListener("click", (e) => {
-    if (!e.target.closest(".menu-dropdown")) {
+    if (!e.target.closest(".menu-dropdown") && !e.target.closest("#browser-toolbar")) {
         document.activeElement.blur();
     }
 });
@@ -425,6 +452,10 @@ document.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "q") {
         e.preventDefault();
         window.go.gui.App.Quit();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === "n") {
+        e.preventDefault();
+        newTab();
     }
 });
 
