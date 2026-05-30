@@ -21,30 +21,55 @@ if (sampleCopy) {
 }
 
 // Menu bar
+function closeMenus() {
+    document.querySelectorAll(".menu-dropdown.menu-open").forEach((d) => {
+        d.classList.remove("menu-open");
+    });
+}
+
 document.getElementById("menu-new-tab").addEventListener("click", () => {
-    document.activeElement.blur();
+    closeMenus();
     newTab();
 });
 
 document.getElementById("menu-preferences").addEventListener("click", () => {
-    document.activeElement.blur();
+    closeMenus();
     openPreferences();
 });
 
 document.getElementById("menu-quit").addEventListener("click", () => {
-    document.activeElement.blur();
+    closeMenus();
     saveAndQuit();
 });
 
 document.getElementById("menu-about").addEventListener("click", () => {
-    document.activeElement.blur();
+    closeMenus();
     openAbout();
+});
+
+// Menu bar — toggle dropdowns on click (CSS :focus-within doesn't work
+// reliably on macOS WebKit where buttons don't receive focus on click).
+document.querySelectorAll(".menu-trigger").forEach((trigger) => {
+    trigger.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const dropdown = trigger.closest(".menu-dropdown");
+        const wasOpen = dropdown.classList.contains("menu-open");
+        // Close all menus first
+        document.querySelectorAll(".menu-dropdown.menu-open").forEach((d) => {
+            d.classList.remove("menu-open");
+        });
+        if (!wasOpen) {
+            dropdown.classList.add("menu-open");
+        }
+    });
 });
 
 // Close menu popup when clicking outside
 document.addEventListener("click", (e) => {
-    if (!e.target.closest(".menu-dropdown") && !e.target.closest("#browser-toolbar") && !e.target.closest("#prefs-dialog")) {
-        document.activeElement.blur();
+    if (!e.target.closest(".menu-dropdown")) {
+        document.querySelectorAll(".menu-dropdown.menu-open").forEach((d) => {
+            d.classList.remove("menu-open");
+        });
     }
 });
 
