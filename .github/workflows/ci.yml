@@ -10,7 +10,11 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            go-version: "stable"
+          - os: macos-latest
+            go-version: "1.24.13"
 
     runs-on: ${{ matrix.os }}
 
@@ -20,7 +24,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: ${{ matrix.go-version }}
 
       - name: Run tests
         run: go test ./...

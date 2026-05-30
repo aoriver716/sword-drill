@@ -91,7 +91,7 @@
         </div>
 
         <!-- Preferences Dialog -->
-        <dialog id="prefs-dialog" class="prefs-dialog">
+        <div id="prefs-dialog" class="prefs-dialog" style="display:none">
             <div class="prefs-header">
                 <span class="prefs-title">Preferences</span>
                 <button id="prefs-close" class="prefs-close-btn">&times;</button>
@@ -108,10 +108,11 @@
                     <button id="prefs-apply" class="prefs-btn">Apply</button>
                 </div>
             </div>
-        </dialog>
+        </div>
+        <div id="prefs-backdrop" class="dialog-backdrop" style="display:none"></div>
 
         <!-- About Dialog -->
-        <dialog id="about-dialog" class="about-dialog">
+        <div id="about-dialog" class="about-dialog" style="display:none">
             <div class="about-header">
                 <span class="about-title">About Sword Drill</span>
                 <button id="about-close" class="prefs-close-btn">&times;</button>
@@ -121,7 +122,8 @@
                 <div id="about-update-status" class="about-update-status"></div>
                 <button id="about-check-updates" class="prefs-btn prefs-btn-primary">Check for Updates</button>
             </div>
-        </dialog>
+        </div>
+        <div id="about-backdrop" class="dialog-backdrop" style="display:none"></div>
     </div>
 
     <script src="wails/ipc.js"></script>

@@ -16,9 +16,11 @@ jobs:
           - os: windows-latest
             platform: windows/amd64
             artifact: sword-drill-windows-amd64.exe
+            go-version: "stable"
           - os: macos-latest
             platform: darwin/universal
             artifact: sword-drill-macos-universal.app.zip
+            go-version: "1.24.13"
 
     runs-on: ${{ matrix.os }}
 
@@ -28,7 +30,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: ${{ matrix.go-version }}
 
       - name: Install Wails CLI
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest

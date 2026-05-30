@@ -2,10 +2,21 @@
 import { translationOptions } from "./translations.js";
 
 const prefsDialog = document.getElementById("prefs-dialog");
+const prefsBackdrop = document.getElementById("prefs-backdrop");
 const prefsBody = document.getElementById("prefs-body");
 const prefsRestartNotice = document.getElementById("prefs-restart-notice");
 let pendingChanges = {};
 let restartRequired = false;
+
+function openDialog() {
+    prefsDialog.classList.add("dialog-open");
+    prefsBackdrop.classList.add("dialog-open");
+}
+
+function closeDialog() {
+    prefsDialog.classList.remove("dialog-open");
+    prefsBackdrop.classList.remove("dialog-open");
+}
 
 function updateRestartNotice() {
     prefsRestartNotice.style.display = restartRequired ? "" : "none";
@@ -14,18 +25,18 @@ function updateRestartNotice() {
 document.getElementById("prefs-close").addEventListener("click", () => {
     pendingChanges = {};
     restartRequired = false;
-    prefsDialog.close();
+    closeDialog();
 });
 
 document.getElementById("prefs-cancel").addEventListener("click", () => {
     pendingChanges = {};
     restartRequired = false;
-    prefsDialog.close();
+    closeDialog();
 });
 
 document.getElementById("prefs-ok").addEventListener("click", async () => {
     await applyPendingChanges();
-    prefsDialog.close();
+    closeDialog();
 });
 
 document.getElementById("prefs-apply").addEventListener("click", async () => {
@@ -40,9 +51,10 @@ document.getElementById("prefs-reset").addEventListener("click", async () => {
     await renderPreferences();
 });
 
-prefsDialog.addEventListener("cancel", () => {
+prefsBackdrop.addEventListener("click", () => {
     pendingChanges = {};
     restartRequired = false;
+    closeDialog();
 });
 
 async function applyPendingChanges() {
@@ -57,7 +69,7 @@ export async function openPreferences() {
     restartRequired = false;
     updateRestartNotice();
     await renderPreferences();
-    prefsDialog.showModal();
+    openDialog();
 }
 
 async function renderPreferences() {
