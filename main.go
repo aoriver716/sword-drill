@@ -5,6 +5,8 @@ import (
 	"embed"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/aoriver716/sword-drill/gui"
 	"github.com/aoriver716/sword-drill/internal/config"
@@ -107,7 +109,39 @@ func watchClipboard(ctx context.Context, display gui.ScriptureDisplay) {
 	}
 }
 
+// initDataDir sets the working directory to the application's data directory.
+// On macOS, apps launched from Finder have CWD set to "/" which breaks relative
+// file paths (config.json, tabs.json, etc.). This ensures a consistent location.
+func initDataDir() {
+	// If wails.json exists in CWD, we're running from the project directory
+	// (development or build step) — don't relocate.
+	if _, err := os.Stat("wails.json"); err == nil {
+		return
+	}
+
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		// Fall back to home directory
+		dir, err = os.UserHomeDir()
+		if err != nil {
+			return
+		}
+	}
+
+	dataDir := filepath.Join(dir, "sword-drill")
+
+	if err := os.MkdirAll(dataDir, 0755); err != nil {
+		log.Printf("WARNING: could not create data directory %s: %v", dataDir, err)
+		return
+	}
+
+	if err := os.Chdir(dataDir); err != nil {
+		log.Printf("WARNING: could not change to data directory %s: %v", dataDir, err)
+	}
+}
+
 func main() {
+	initDataDir()
 	initConfig()
 
 	app := gui.NewApp(lookupChapter, registry)
