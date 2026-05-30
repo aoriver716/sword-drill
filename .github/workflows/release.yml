@@ -44,6 +44,8 @@ jobs:
 
       - name: Build (macOS)
         if: matrix.os == 'macos-latest'
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "12.0"
         run: wails build -platform ${{ matrix.platform }} -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=${{ secrets.API_BIBLE_KEY }} -X github.com/aoriver716/sword-drill/internal/updater.Version=${{ github.ref_name }}"
 
       - name: Zip macOS app bundle

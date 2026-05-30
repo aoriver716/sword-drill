@@ -4,9 +4,18 @@ __Disclaimer__: This entire project was shamelessly vibe coded.
 
 Don't you hate it when you're reading a great article and the author drops a scripture reference without quoting the text — or worse, doesn't even link it? Gone are those days. Sword Drill watches your clipboard for scripture references and instantly pulls up the full text. Just highlight a reference and press Ctrl+C. It handles multiple references at once, so you can even copy an entire article and get every scripture in one shot.
 
+## System Requirements
+
+| Platform | Minimum Version |
+|----------|----------------|
+| Windows  | Windows 10+    |
+| macOS    | macOS 12 (Monterey)+ |
+
+> **Note:** macOS 12+ is required because Go 1.25+ links against Security framework APIs (`SecTrustCopyCertificateChain`) that are only available starting in macOS 12. Older macOS versions will crash at startup when making HTTPS requests.
+
 ## Build
 
-Requires [Go](https://go.dev/dl/) 1.21+ and a C compiler (CGo is needed for the clipboard package).
+Requires [Go](https://go.dev/dl/) 1.26+ and a C compiler (CGo is needed for the clipboard package).
 
 **Windows** — install [MSYS2](https://www.msys2.org/) and MinGW-w64 GCC:
 ```sh
