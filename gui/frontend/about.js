@@ -1,10 +1,21 @@
 // about.js — About dialog and update checking logic.
 
 const aboutDialog = document.getElementById("about-dialog");
+const aboutBackdrop = document.getElementById("about-backdrop");
 const aboutClose = document.getElementById("about-close");
 const aboutVersionText = document.getElementById("about-version-text");
 const aboutUpdateStatus = document.getElementById("about-update-status");
 const aboutCheckBtn = document.getElementById("about-check-updates");
+
+function openDialog() {
+    aboutDialog.classList.add("dialog-open");
+    aboutBackdrop.classList.add("dialog-open");
+}
+
+function closeDialog() {
+    aboutDialog.classList.remove("dialog-open");
+    aboutBackdrop.classList.remove("dialog-open");
+}
 
 export function openAbout() {
     window.go.gui.App.GetVersion().then((version) => {
@@ -12,15 +23,15 @@ export function openAbout() {
     });
     aboutUpdateStatus.textContent = "";
     aboutUpdateStatus.className = "about-update-status";
-    aboutDialog.showModal();
+    openDialog();
 }
 
 aboutClose.addEventListener("click", () => {
-    aboutDialog.close();
+    closeDialog();
 });
 
-aboutDialog.addEventListener("click", (e) => {
-    if (e.target === aboutDialog) aboutDialog.close();
+aboutBackdrop.addEventListener("click", () => {
+    closeDialog();
 });
 
 aboutCheckBtn.addEventListener("click", () => {

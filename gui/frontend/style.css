@@ -544,22 +544,59 @@ body {
 
 /* Preferences dialog */
 .prefs-dialog {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     border: none;
     border-radius: 8px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
     width: 420px;
     max-height: 80vh;
     padding: 0;
-    margin: auto;
-}
-
-.prefs-dialog[open] {
-    display: flex;
+    z-index: 1001;
+    background: #fff;
     flex-direction: column;
 }
 
-.prefs-dialog::backdrop {
+.prefs-dialog.dialog-open {
+    display: flex;
+}
+
+.about-dialog {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    width: 360px;
+    padding: 0;
+    z-index: 1001;
+    background: #fff;
+    flex-direction: column;
+}
+
+.about-dialog.dialog-open {
+    display: flex;
+}
+
+.dialog-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: rgba(0, 0, 0, 0.35);
+    z-index: 1000;
+}
+
+.dialog-backdrop.dialog-open {
+    display: block;
 }
 
 .prefs-header {
@@ -750,23 +787,6 @@ body {
 }
 
 /* About Dialog */
-.about-dialog {
-    border: none;
-    border-radius: 8px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-    width: 360px;
-    padding: 0;
-    margin: auto;
-}
-
-.about-dialog[open] {
-    display: flex;
-    flex-direction: column;
-}
-
-.about-dialog::backdrop {
-    background: rgba(0, 0, 0, 0.35);
-}
 
 .about-header {
     display: flex;
