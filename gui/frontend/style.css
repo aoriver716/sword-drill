@@ -104,7 +104,7 @@ body {
     z-index: 100;
 }
 
-.menu-dropdown:focus-within .menu-popup {
+.menu-dropdown.menu-open .menu-popup {
     display: block;
 }
 
