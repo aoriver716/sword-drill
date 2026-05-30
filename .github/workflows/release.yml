@@ -48,9 +48,12 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: wails build -platform ${{ matrix.platform }} -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=${{ secrets.API_BIBLE_KEY }} -X github.com/aoriver716/sword-drill/internal/updater.Version=${{ github.ref_name }}"
 
-      - name: Zip macOS app bundle
+      - name: Sign and package macOS app
         if: matrix.os == 'macos-latest'
         run: |
+          APP=$(find build/bin -name "*.app" -maxdepth 1)
+          chmod +x "$APP/Contents/MacOS/"*
+          codesign --deep --force --sign - "$APP"
           cd build/bin
           zip -r "../../${{ matrix.artifact }}" *.app
 
