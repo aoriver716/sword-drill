@@ -61,7 +61,7 @@ jobs:
     secrets: inherit
 
   release:
-    needs: build
+    needs: [version, build]
     runs-on: ubuntu-latest
 
     steps:
@@ -87,7 +87,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: nightly
-          name: "Nightly Build"
+          name: ${{ needs.version.outputs.version }}
           body: |
             Automated nightly build from the latest `main` branch.
 

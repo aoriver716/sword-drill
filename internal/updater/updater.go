@@ -41,6 +41,7 @@ type UpdateInfo struct {
 // githubRelease is a subset of the GitHub API response for a release.
 type githubRelease struct {
 	TagName string        `json:"tag_name"`
+	Name    string        `json:"name"`
 	HTMLURL string        `json:"html_url"`
 	Assets  []githubAsset `json:"assets"`
 }
@@ -163,7 +164,7 @@ func checkNightlySwitch(info UpdateInfo) UpdateInfo {
 	}
 
 	info.Available = true
-	info.Latest = release.TagName
+	info.Latest = release.Name
 	info.ReleaseURL = release.HTMLURL
 	info.DownloadURL = findPlatformAsset(release.Assets)
 	return info
@@ -250,7 +251,7 @@ func checkNightlyUpdate(info UpdateInfo) UpdateInfo {
 
 	if latestShort != currentSHA {
 		info.Available = true
-		info.Latest = release.TagName
+		info.Latest = release.Name
 		info.ReleaseURL = release.HTMLURL
 		info.DownloadURL = findPlatformAsset(release.Assets)
 	}
