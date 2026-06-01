@@ -1,0 +1,137 @@
+name: Nightly
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    # Run at midnight UTC daily
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.check.outputs.should_build }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if new commits since last nightly
+        id: check
+        run: |
+          # Always build on workflow_dispatch or push
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # For scheduled runs, check if there are commits in the last 24 hours
+          if git log --since="24 hours ago" --oneline | grep -q .; then
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: check-changes
+    if: needs.check-changes.outputs.should_build == 'true'
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows/amd64
+            artifact: sword-drill-windows-amd64.exe
+            go-version: "stable"
+          - os: macos-latest
+            platform: darwin/universal
+            artifact: sword-drill-macos-universal.app.zip
+            go-version: "1.24.13"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Set nightly version
+        id: version
+        shell: bash
+        run: echo "version=nightly-$(date -u +%Y%m%d)-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Build (Windows)
+        if: matrix.os == 'windows-latest'
+        run: wails build -platform ${{ matrix.platform }} -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=${{ secrets.API_BIBLE_KEY }} -X github.com/aoriver716/sword-drill/internal/updater.Version=${{ steps.version.outputs.version }}" -o sword-drill.exe
+
+      - name: Rename Windows artifact
+        if: matrix.os == 'windows-latest'
+        run: |
+          Copy-Item "build\bin\sword-drill.exe" "${{ matrix.artifact }}"
+
+      - name: Build (macOS)
+        if: matrix.os == 'macos-latest'
+        run: wails build -platform ${{ matrix.platform }} -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=${{ secrets.API_BIBLE_KEY }} -X github.com/aoriver716/sword-drill/internal/updater.Version=${{ steps.version.outputs.version }}"
+
+      - name: Sign and package macOS app
+        if: matrix.os == 'macos-latest'
+        run: |
+          APP=$(find build/bin -name "*.app" -maxdepth 1)
+          chmod +x "$APP/Contents/MacOS/"*
+          codesign --deep --force --sign - "$APP"
+          cd build/bin
+          zip -r "../../${{ matrix.artifact }}" *.app
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Delete existing nightly release
+        run: gh release delete nightly --yes --cleanup-tag 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create nightly tag
+        run: |
+          git tag -f nightly
+          git push -f origin nightly
+
+      - name: Create nightly release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          name: "Nightly Build"
+          body: |
+            Automated nightly build from the latest `main` branch.
+
+            **⚠️ This is an unstable build for testing purposes.**
+
+            Built from commit: ${{ github.sha }}
+            Date: ${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
+          files: artifacts/*
+          prerelease: true

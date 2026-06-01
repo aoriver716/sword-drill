@@ -4,6 +4,15 @@ __Disclaimer__: This entire project was shamelessly vibe coded.
 
 Don't you hate it when you're reading a great article and the author drops a scripture reference without quoting the text — or worse, doesn't even link it? Gone are those days. Sword Drill watches your clipboard for scripture references and instantly pulls up the full text. Just highlight a reference and press Ctrl+C. It handles multiple references at once, so you can even copy an entire article and get every scripture in one shot.
 
+## Download
+
+| Channel | Link | Description |
+|---------|------|-------------|
+| **Stable** | [Latest Release](https://github.com/aoriver716/sword-drill/releases/latest) | Recommended for most users |
+| **Nightly** | [Nightly Build](https://github.com/aoriver716/sword-drill/releases/tag/nightly) | Latest from `main` — may be unstable |
+
+Available for **Windows** and **macOS**.
+
 ## Build
 
 Requires [Go](https://go.dev/dl/) 1.21+ and a C compiler (CGo is needed for the clipboard package).
@@ -64,7 +73,3 @@ However, if you're building from source and want to use [API.Bible](https://scri
 ```sh
 CGO_ENABLED=1 go build -tags "desktop,production" -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=your-key" -o sword-drill.exe .
 ```
-
-## Project Plan
-
-See [doc/PLAN.md](doc/PLAN.md) for the full implementation checklist and roadmap.
