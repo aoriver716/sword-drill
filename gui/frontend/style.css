@@ -786,6 +786,26 @@ body {
     text-align: center;
 }
 
+.about-author {
+    margin-bottom: 4px;
+    color: #555;
+    font-size: 13px;
+}
+
+.about-links {
+    margin-bottom: 16px;
+    font-size: 13px;
+}
+
+.about-links a {
+    color: #2a6cb6;
+    text-decoration: none;
+}
+
+.about-links a:hover {
+    text-decoration: underline;
+}
+
 .about-version {
     margin-bottom: 16px;
     color: #555;

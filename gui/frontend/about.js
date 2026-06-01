@@ -5,6 +5,7 @@ const aboutClose = document.getElementById("about-close");
 const aboutVersionText = document.getElementById("about-version-text");
 const aboutUpdateStatus = document.getElementById("about-update-status");
 const aboutCheckBtn = document.getElementById("about-check-updates");
+const aboutGithubLink = document.getElementById("about-github-link");
 
 export function openAbout() {
     window.go.gui.App.GetVersion().then((version) => {
@@ -25,6 +26,11 @@ aboutDialog.addEventListener("click", (e) => {
 
 aboutCheckBtn.addEventListener("click", () => {
     checkForUpdates();
+});
+
+aboutGithubLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    window.runtime.BrowserOpenURL("https://github.com/aoriver716/sword-drill");
 });
 
 function checkForUpdates() {
