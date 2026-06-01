@@ -5,9 +5,12 @@ on:
     branches:
       - main
   schedule:
-    # Run at midnight UTC daily
     - cron: "0 0 * * *"
   workflow_dispatch:
+
+concurrency:
+  group: nightly
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -37,83 +40,25 @@ jobs:
             echo "should_build=false" >> "$GITHUB_OUTPUT"
           fi
 
-  build:
+  version:
     needs: check-changes
     if: needs.check-changes.outputs.should_build == 'true'
-    strategy:
-      matrix:
-        include:
-          - os: windows-latest
-            platform: windows/amd64
-            artifact: sword-drill-windows-amd64.exe
-            go-version: "stable"
-          - os: macos-latest
-            platform: darwin/universal
-            artifact: sword-drill-macos-universal.app.zip
-            go-version: "1.24.13"
-
-    runs-on: ${{ matrix.os }}
-
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ matrix.go-version }}
-
-      - name: Install Wails CLI
-        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
-
       - name: Set nightly version
         id: version
-        shell: bash
         run: echo "version=nightly-$(date -u +%Y%m%d)-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
-      - name: Build (Windows)
-        if: matrix.os == 'windows-latest'
-        run: wails build -platform ${{ matrix.platform }} -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=${{ secrets.API_BIBLE_KEY }} -X github.com/aoriver716/sword-drill/internal/updater.Version=${{ steps.version.outputs.version }}" -o sword-drill.exe
-
-      - name: Rename Windows artifact
-        if: matrix.os == 'windows-latest'
-        run: |
-          Copy-Item "build\bin\sword-drill.exe" "${{ matrix.artifact }}"
-
-      - name: Install NSIS (Windows)
-        if: matrix.os == 'windows-latest'
-        run: choco install nsis -y
-
-      - name: Build Windows installer (NSIS)
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          & "C:\Program Files (x86)\NSIS\makensis.exe" /DVERSION=${{ steps.version.outputs.version }} /DOUTPUT=sword-drill-windows-amd64-setup.exe /DEXE_PATH=${{ github.workspace }}\build\bin\sword-drill.exe installer/windows/sword-drill.nsi
-
-      - name: Build (macOS)
-        if: matrix.os == 'macos-latest'
-        run: wails build -platform ${{ matrix.platform }} -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=${{ secrets.API_BIBLE_KEY }} -X github.com/aoriver716/sword-drill/internal/updater.Version=${{ steps.version.outputs.version }}"
-
-      - name: Sign and package macOS app
-        if: matrix.os == 'macos-latest'
-        run: |
-          APP=$(find build/bin -name "*.app" -maxdepth 1)
-          chmod +x "$APP/Contents/MacOS/"*
-          codesign --deep --force --sign - "$APP"
-          cd build/bin
-          zip -r "../../${{ matrix.artifact }}" *.app
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}
-
-      - name: Upload Windows installer artifact
-        if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: sword-drill-windows-amd64-setup.exe
-          path: sword-drill-windows-amd64-setup.exe
+  build:
+    needs: version
+    uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+    secrets: inherit
 
   release:
     needs: build
