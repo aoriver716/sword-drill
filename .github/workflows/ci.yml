@@ -7,7 +7,27 @@ on:
     branches: [main]
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.filter.outputs.go }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            go:
+              - '**.go'
+              - 'go.mod'
+              - 'go.sum'
+            frontend:
+              - 'gui/frontend/**'
+
   test:
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
     strategy:
       matrix:
         include:
@@ -30,7 +50,8 @@ jobs:
         run: go test ./...
 
   build:
-    if: github.event_name == 'pull_request'
+    needs: changes
+    if: github.event_name == 'pull_request' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.frontend == 'true')
     strategy:
       matrix:
         include:
