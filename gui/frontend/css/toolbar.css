@@ -1,0 +1,163 @@
+/* Generic header toolbar (log panel) */
+.toolbar {
+    display: flex;
+    gap: 4px;
+}
+
+.toolbar button {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    padding: 4px 6px;
+    display: flex;
+    align-items: center;
+    color: var(--color-text-secondary);
+}
+
+.toolbar button:hover {
+    background: var(--color-bg-hover);
+    border-color: var(--color-border);
+}
+
+/* Browser toolbar (per-tab navigation) */
+#browser-toolbar {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: var(--color-bg-panel-alt);
+    border-bottom: 1px solid var(--color-border-soft);
+    flex-shrink: 0;
+    user-select: none;
+    font-size: var(--font-size-sm);
+}
+
+#browser-toolbar.visible {
+    display: flex;
+}
+
+#browser-toolbar select {
+    font-size: var(--font-size-sm);
+    padding: 2px 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+}
+
+#browser-toolbar button {
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    padding: 2px 6px;
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+}
+
+#browser-toolbar button:hover {
+    background: var(--color-bg-hover);
+}
+
+#browser-toolbar button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+#browser-toolbar button:disabled:hover {
+    background: none;
+}
+
+#browser-toolbar .chapter-input {
+    width: 40px;
+    text-align: center;
+    font-size: var(--font-size-sm);
+    padding: 2px 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+#browser-toolbar .chapter-total {
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+
+#browser-toolbar #translation-select {
+    margin-left: auto;
+    font-size: var(--font-size-sm);
+    padding: 2px 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+    max-width: 200px;
+}
+
+#browser-toolbar #parallel-select {
+    font-size: var(--font-size-sm);
+    padding: 2px 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+    max-width: 200px;
+}
+
+/* Toolbar separator */
+.toolbar-separator {
+    width: 1px;
+    height: 18px;
+    background: var(--color-border);
+    margin: 0 2px;
+}
+
+/* Toolbar toggle (parallel mode) */
+.toolbar-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+.toolbar-toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toolbar-toggle .toggle-track {
+    position: relative;
+    width: 28px;
+    height: 14px;
+    background: var(--color-bg-toggle-off);
+    border-radius: 7px;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.toolbar-toggle .toggle-track::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--color-bg);
+    transition: transform 0.2s;
+}
+
+.toolbar-toggle input:checked + .toggle-track {
+    background: var(--color-accent);
+}
+
+.toolbar-toggle input:checked + .toggle-track::after {
+    transform: translateX(14px);
+}
+
+.toolbar-toggle-label {
+    user-select: none;
+}

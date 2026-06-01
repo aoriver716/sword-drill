@@ -1,0 +1,70 @@
+.about-dialog {
+    width: 360px;
+}
+
+.about-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--color-border-softer);
+}
+
+.about-title {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.about-body {
+    padding: 20px 18px;
+    text-align: center;
+}
+
+.about-author {
+    margin-bottom: 4px;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.about-links {
+    margin-bottom: 16px;
+    font-size: var(--font-size-sm);
+}
+
+.about-links a {
+    color: var(--color-accent-link);
+    text-decoration: none;
+}
+
+.about-links a:hover {
+    text-decoration: underline;
+}
+
+.about-version {
+    margin-bottom: 16px;
+    color: var(--color-text-secondary);
+}
+
+.about-update-status {
+    margin-bottom: 12px;
+    font-size: var(--font-size-sm);
+    min-height: 20px;
+}
+
+.about-update-status.update-available {
+    color: var(--color-success);
+    font-weight: 500;
+}
+
+.about-update-status.update-current {
+    color: var(--color-text-secondary);
+}
+
+.about-update-status.update-error {
+    color: var(--color-error);
+}
+
+.about-update-status a {
+    color: var(--color-accent);
+    text-decoration: underline;
+}

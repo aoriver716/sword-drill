@@ -1,0 +1,61 @@
+/* Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+    color: var(--color-text);
+    background: var(--color-bg);
+    overflow: hidden;
+    height: 100vh;
+}
+
+/* App shell */
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Top-level scrollable panels */
+#browser-panel,
+#log-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 100px;
+    overflow: hidden;
+}
+
+/* Resize handle between panels */
+#resize-handle {
+    height: 5px;
+    background: var(--color-bg-hover);
+    cursor: ns-resize;
+    flex-shrink: 0;
+}
+
+#resize-handle:hover {
+    background: #c0c0c0;
+}
+
+/* Panel headers */
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 12px;
+    background: var(--color-bg-panel);
+    border-bottom: 1px solid var(--color-border-soft);
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.panel-title {
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+}
