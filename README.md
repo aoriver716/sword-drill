@@ -10,7 +10,7 @@ Don't you hate it when you're reading a great article and the author drops a scr
 - **Scripture Browser** — Navigate and read scripture in context with tabbed browsing.
 - **Scripture Log** — Scrollable log of all detected references.
 - **Multiple Bible APIs** — Supports [bible-api.com](https://bible-api.com) and [API.Bible](https://scripture.api.bible) (2,500+ translations).
-- **Cross-platform** — Native menus and behavior on Windows and macOS.
+- **Cross-platform** — Fully supported on Windows and macOS.
 
 ## Download
 
