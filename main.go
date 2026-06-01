@@ -151,7 +151,7 @@ func buildAppMenu(app *gui.App) *menu.Menu {
 		wailsRuntime.EventsEmit(app.Ctx(), "menu:new-tab")
 	})
 	fileMenu.AddSeparator()
-	fileMenu.AddText("Preferences…", keys.CmdOrCtrl(","), func(_ *menu.CallbackData) {
+	fileMenu.AddText("Preferences…", nil, func(_ *menu.CallbackData) {
 		wailsRuntime.EventsEmit(app.Ctx(), "menu:preferences")
 	})
 	fileMenu.AddSeparator()
