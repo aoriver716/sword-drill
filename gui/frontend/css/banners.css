@@ -1,0 +1,33 @@
+/* Update banner (startup notification when a new release is available) */
+.update-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--color-update-bg);
+    border-bottom: 1px solid var(--color-update-border);
+    font-size: var(--font-size-sm);
+    color: var(--color-update-text);
+    flex-shrink: 0;
+}
+
+.update-banner a {
+    color: var(--color-update-link);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.update-banner button {
+    margin-left: auto;
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: #666;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.update-banner button:hover {
+    color: var(--color-text);
+}

@@ -1,0 +1,191 @@
+.prefs-dialog {
+    width: 420px;
+    max-height: 80vh;
+}
+
+.prefs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--color-border-softer);
+}
+
+.prefs-title {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.prefs-close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.prefs-close-btn:hover {
+    color: var(--color-text);
+}
+
+.prefs-body {
+    padding: 16px 18px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.prefs-group {
+    margin-bottom: 18px;
+}
+
+.prefs-group:last-child {
+    margin-bottom: 0;
+}
+
+.prefs-group-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-text-muted);
+    margin-bottom: 10px;
+}
+
+.prefs-field {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.prefs-field + .prefs-field {
+    border-top: 1px solid var(--color-border-faintest);
+}
+
+.prefs-field-info {
+    flex: 1;
+    margin-right: 16px;
+}
+
+.prefs-field-label {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+}
+
+.prefs-field-desc {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+}
+
+.prefs-field select {
+    font-size: var(--font-size-sm);
+    padding: 4px 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    min-width: 140px;
+}
+
+.prefs-field input[type="text"],
+.prefs-field input[type="number"] {
+    font-size: var(--font-size-sm);
+    padding: 4px 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    width: 140px;
+}
+
+/* Toggle switch */
+.prefs-toggle {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.prefs-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.prefs-toggle .toggle-track {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--color-bg-toggle-off);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.prefs-toggle .toggle-track::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 2px;
+    top: 2px;
+    background: var(--color-bg);
+    border-radius: 50%;
+    transition: transform 0.2s;
+}
+
+.prefs-toggle input:checked + .toggle-track {
+    background: var(--color-accent);
+}
+
+.prefs-toggle input:checked + .toggle-track::after {
+    transform: translateX(16px);
+}
+
+.prefs-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 18px;
+    border-top: 1px solid var(--color-border-softer);
+}
+
+.prefs-restart-notice {
+    padding: 8px 18px;
+    background: var(--color-notice-bg);
+    border-top: 1px solid var(--color-notice-border);
+    color: var(--color-notice-text);
+    font-size: var(--font-size-xs);
+    text-align: center;
+}
+
+.prefs-footer-right {
+    display: flex;
+    gap: 8px;
+}
+
+.prefs-btn {
+    font-size: var(--font-size-sm);
+    padding: 6px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-button);
+    cursor: pointer;
+    color: var(--color-text);
+}
+
+.prefs-btn:hover {
+    background: var(--color-bg-button-hover);
+}
+
+.prefs-btn-primary {
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border-color: var(--color-accent-hover);
+}
+
+.prefs-btn-primary:hover {
+    background: var(--color-accent-hover);
+}
