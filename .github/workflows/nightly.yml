@@ -85,7 +85,7 @@ jobs:
 
       - name: Build Windows installer (NSIS)
         if: matrix.os == 'windows-latest'
-        run: makensis /DVERSION=${{ steps.version.outputs.version }} /DOUTPUT=sword-drill-windows-amd64-setup.exe installer/windows/sword-drill.nsi
+        run: & "C:\Program Files (x86)\NSIS\makensis.exe" /DVERSION=${{ steps.version.outputs.version }} /DOUTPUT=sword-drill-windows-amd64-setup.exe installer/windows/sword-drill.nsi
 
       - name: Build (macOS)
         if: matrix.os == 'macos-latest'
