@@ -14,8 +14,11 @@ import (
 	"github.com/aoriver716/sword-drill/internal/formatter"
 	"github.com/aoriver716/sword-drill/internal/lookup"
 	"github.com/wailsapp/wails/v2"
+	"github.com/wailsapp/wails/v2/pkg/menu"
+	"github.com/wailsapp/wails/v2/pkg/menu/keys"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 	"golang.design/x/clipboard"
 )
 
@@ -140,6 +143,30 @@ func initDataDir() {
 	}
 }
 
+func buildAppMenu(app *gui.App) *menu.Menu {
+	appMenu := menu.NewMenu()
+
+	fileMenu := appMenu.AddSubmenu("File")
+	fileMenu.AddText("New Tab", keys.CmdOrCtrl("n"), func(_ *menu.CallbackData) {
+		wailsRuntime.EventsEmit(app.Ctx(), "menu:new-tab")
+	})
+	fileMenu.AddSeparator()
+	fileMenu.AddText("Preferences…", nil, func(_ *menu.CallbackData) {
+		wailsRuntime.EventsEmit(app.Ctx(), "menu:preferences")
+	})
+	fileMenu.AddSeparator()
+	fileMenu.AddText("Quit", keys.CmdOrCtrl("q"), func(_ *menu.CallbackData) {
+		wailsRuntime.EventsEmit(app.Ctx(), "menu:quit")
+	})
+
+	helpMenu := appMenu.AddSubmenu("Help")
+	helpMenu.AddText("About Sword Drill", nil, func(_ *menu.CallbackData) {
+		wailsRuntime.EventsEmit(app.Ctx(), "menu:about")
+	})
+
+	return appMenu
+}
+
 func main() {
 	initDataDir()
 	initConfig()
@@ -150,6 +177,7 @@ func main() {
 		Title:  "Sword Drill",
 		Width:  800,
 		Height: 600,
+		Menu:   buildAppMenu(app),
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

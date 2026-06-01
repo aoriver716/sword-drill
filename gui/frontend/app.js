@@ -20,37 +20,13 @@ if (sampleCopy) {
     });
 }
 
-// Menu bar
-document.getElementById("menu-new-tab").addEventListener("click", () => {
-    document.activeElement.blur();
-    newTab();
-});
+// Native menu event handlers (menus are defined in Go, events emitted to frontend)
+window.runtime.EventsOn("menu:new-tab", () => { newTab(); });
+window.runtime.EventsOn("menu:preferences", () => { openPreferences(); });
+window.runtime.EventsOn("menu:quit", () => { saveAndQuit(); });
+window.runtime.EventsOn("menu:about", () => { openAbout(); });
 
-document.getElementById("menu-preferences").addEventListener("click", () => {
-    document.activeElement.blur();
-    openPreferences();
-});
-
-document.getElementById("menu-quit").addEventListener("click", () => {
-    document.activeElement.blur();
-    saveAndQuit();
-});
-
-document.getElementById("menu-about").addEventListener("click", () => {
-    document.activeElement.blur();
-    openAbout();
-});
-
-// Close menu popup when clicking outside
-document.addEventListener("click", (e) => {
-    if (!e.target.closest(".menu-dropdown") && !e.target.closest("#browser-toolbar") && !e.target.closest("#prefs-dialog")) {
-        document.activeElement.blur();
-    }
-});
-
-// Keyboard shortcuts
-register("q", saveAndQuit);
-register("n", newTab);
+// Keyboard shortcuts (for actions not in the native menu)
 register("w", () => { if (getActiveTab() != null) closeTab(getActiveTab()); });
 register("t", reopenClosedTab, { shift: true });
 init();
@@ -90,10 +66,9 @@ document.addEventListener("mousemove", (e) => {
     if (!isResizing) return;
     const appEl = document.getElementById("app");
     const appRect = appEl.getBoundingClientRect();
-    const menuBarHeight = document.getElementById("menu-bar").offsetHeight;
     const handleHeight = resizeHandle.offsetHeight;
-    const availableHeight = appRect.height - menuBarHeight - handleHeight;
-    const browserHeight = e.clientY - appRect.top - menuBarHeight;
+    const availableHeight = appRect.height - handleHeight;
+    const browserHeight = e.clientY - appRect.top;
     const logHeight = availableHeight - browserHeight;
 
     if (browserHeight >= 100 && logHeight >= 100) {
