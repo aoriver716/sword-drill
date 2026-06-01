@@ -44,6 +44,14 @@ jobs:
         run: |
           Copy-Item "build\bin\sword-drill.exe" "${{ matrix.artifact }}"
 
+      - name: Install NSIS (Windows)
+        if: matrix.os == 'windows-latest'
+        run: choco install nsis -y
+
+      - name: Build Windows installer (NSIS)
+        if: matrix.os == 'windows-latest'
+        run: makensis /DVERSION=${{ github.ref_name }} /DOUTPUT=sword-drill-windows-amd64-setup.exe installer/windows/sword-drill.nsi
+
       - name: Build (macOS)
         if: matrix.os == 'macos-latest'
         run: wails build -platform ${{ matrix.platform }} -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=${{ secrets.API_BIBLE_KEY }} -X github.com/aoriver716/sword-drill/internal/updater.Version=${{ github.ref_name }}"
@@ -62,6 +70,13 @@ jobs:
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.artifact }}
+
+      - name: Upload Windows installer artifact
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sword-drill-windows-amd64-setup.exe
+          path: sword-drill-windows-amd64-setup.exe
 
   release:
     needs: build
