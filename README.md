@@ -13,6 +13,8 @@ Don't you hate it when you're reading a great article and the author drops a scr
 
 Available for **Windows** and **macOS**.
 
+Windows releases include both a portable executable (`sword-drill-windows-amd64.exe`) and an NSIS installer (`sword-drill-windows-amd64-setup.exe`).
+
 ## Build
 
 Requires [Go](https://go.dev/dl/) 1.21+ and a C compiler (CGo is needed for the clipboard package).
