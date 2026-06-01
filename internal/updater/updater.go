@@ -44,14 +44,25 @@ type githubAsset struct {
 
 // CheckForUpdates queries the GitHub API for the latest release and compares
 // it against the current version. Returns platform-specific download info.
+// Nightly builds check against the nightly release (by commit SHA).
+// Stable builds check against the latest stable release (by semver).
 func CheckForUpdates() UpdateInfo {
 	info := UpdateInfo{Current: Version}
 
-	if Version == "dev" {
+	if Version == "dev" || strings.HasPrefix(Version, "pr-") {
 		info.Error = "Cannot check for updates in dev builds"
 		return info
 	}
 
+	if strings.HasPrefix(Version, "nightly-") {
+		return checkNightlyUpdate(info)
+	}
+
+	return checkStableUpdate(info)
+}
+
+// checkStableUpdate checks for a newer stable release via /releases/latest.
+func checkStableUpdate(info UpdateInfo) UpdateInfo {
 	client := &http.Client{Timeout: 10 * time.Second}
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", repoOwner, repoName)
 
@@ -82,6 +93,101 @@ func CheckForUpdates() UpdateInfo {
 	}
 
 	return info
+}
+
+// checkNightlyUpdate checks if the nightly release has a newer commit than
+// the currently running nightly build. Compares the short SHA embedded in
+// the version string (nightly-YYYYMMDD-<sha>) against the nightly release's
+// target commit.
+func checkNightlyUpdate(info UpdateInfo) UpdateInfo {
+	currentSHA := extractNightlySHA(Version)
+	if currentSHA == "" {
+		info.Error = "Cannot parse commit SHA from nightly version"
+		return info
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/tags/nightly", repoOwner, repoName)
+
+	resp, err := client.Get(url)
+	if err != nil {
+		info.Error = fmt.Sprintf("Failed to check for updates: %v", err)
+		return info
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		// No nightly release exists yet
+		return info
+	}
+	if resp.StatusCode != http.StatusOK {
+		info.Error = fmt.Sprintf("GitHub API returned status %d", resp.StatusCode)
+		return info
+	}
+
+	var release githubRelease
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		info.Error = fmt.Sprintf("Failed to parse response: %v", err)
+		return info
+	}
+
+	// The nightly release tag_name is "nightly" but the body or name may
+	// not contain the SHA. Use the target_commitish from the release which
+	// is the full SHA the tag points to. We fetch it via the git tag API.
+	latestSHA, err := getNightlyTagSHA(client)
+	if err != nil {
+		info.Error = fmt.Sprintf("Failed to resolve nightly tag: %v", err)
+		return info
+	}
+
+	// Compare short SHAs (the current version has a 7-char short SHA)
+	latestShort := latestSHA
+	if len(latestShort) > len(currentSHA) {
+		latestShort = latestShort[:len(currentSHA)]
+	}
+
+	if latestShort != currentSHA {
+		info.Available = true
+		info.Latest = release.TagName
+		info.ReleaseURL = release.HTMLURL
+		info.DownloadURL = findPlatformAsset(release.Assets)
+	}
+
+	return info
+}
+
+// getNightlyTagSHA resolves the nightly tag to its commit SHA.
+func getNightlyTagSHA(client *http.Client) (string, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/git/ref/tags/nightly", repoOwner, repoName)
+	resp, err := client.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("status %d", resp.StatusCode)
+	}
+
+	var ref struct {
+		Object struct {
+			SHA string `json:"sha"`
+		} `json:"object"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&ref); err != nil {
+		return "", err
+	}
+	return ref.Object.SHA, nil
+}
+
+// extractNightlySHA extracts the commit SHA from a nightly version string.
+// Format: nightly-YYYYMMDD-<sha>
+func extractNightlySHA(version string) string {
+	parts := strings.Split(version, "-")
+	if len(parts) >= 3 {
+		return parts[2]
+	}
+	return ""
 }
 
 // findPlatformAsset returns the download URL for the current platform's binary.

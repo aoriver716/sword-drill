@@ -39,3 +39,25 @@ func TestFindPlatformAsset(t *testing.T) {
 		t.Error("expected a platform asset URL, got empty string")
 	}
 }
+
+func TestExtractNightlySHA(t *testing.T) {
+	tests := []struct {
+		version string
+		want    string
+	}{
+		{"nightly-20260601-abc1234", "abc1234"},
+		{"nightly-20260601-deadbeef", "deadbeef"},
+		{"nightly-20260601", ""},
+		{"v0.6.0", ""},
+		{"dev", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.version, func(t *testing.T) {
+			got := extractNightlySHA(tt.version)
+			if got != tt.want {
+				t.Errorf("extractNightlySHA(%q) = %q, want %q", tt.version, got, tt.want)
+			}
+		})
+	}
+}
