@@ -12,6 +12,11 @@ import (
 const (
 	repoOwner = "aoriver716"
 	repoName  = "sword-drill"
+
+	// ChannelStable selects the latest stable release.
+	ChannelStable = "stable"
+	// ChannelNightly selects the rolling nightly release.
+	ChannelNightly = "nightly"
 )
 
 // Version is set at build time via -ldflags:
@@ -26,6 +31,10 @@ type UpdateInfo struct {
 	Latest      string `json:"latest"`
 	DownloadURL string `json:"downloadURL"`
 	ReleaseURL  string `json:"releaseURL"`
+	// IsDowngrade is true when the offered release is on a different channel
+	// that the user has switched to (e.g. on a nightly build but the selected
+	// channel is stable). The UI should phrase the prompt as a downgrade.
+	IsDowngrade bool   `json:"isDowngrade,omitempty"`
 	Error       string `json:"error,omitempty"`
 }
 
@@ -42,11 +51,14 @@ type githubAsset struct {
 	BrowserDownloadURL string `json:"browser_download_url"`
 }
 
-// CheckForUpdates queries the GitHub API for the latest release and compares
-// it against the current version. Returns platform-specific download info.
-// Nightly builds check against the nightly release (by commit SHA).
-// Stable builds check against the latest stable release (by semver).
-func CheckForUpdates() UpdateInfo {
+// CheckForUpdates queries the GitHub API for an available release on the
+// requested channel and compares it against the current build. The channel
+// argument selects which release stream to check (ChannelStable or
+// ChannelNightly); when empty it defaults to stable. If the current build
+// is on a different channel than the one selected, the returned UpdateInfo
+// will indicate a cross-channel switch (with IsDowngrade set when moving
+// from nightly back to stable).
+func CheckForUpdates(channel string) UpdateInfo {
 	info := UpdateInfo{Current: Version}
 
 	if Version == "dev" || strings.HasPrefix(Version, "pr-") {
@@ -54,11 +66,29 @@ func CheckForUpdates() UpdateInfo {
 		return info
 	}
 
-	if strings.HasPrefix(Version, "nightly-") {
-		return checkNightlyUpdate(info)
+	if channel == "" {
+		channel = ChannelStable
 	}
 
-	return checkStableUpdate(info)
+	currentIsNightly := strings.HasPrefix(Version, "nightly-")
+
+	switch channel {
+	case ChannelNightly:
+		if currentIsNightly {
+			return checkNightlyUpdate(info)
+		}
+		// Cross-channel: user on stable wants to switch to nightly.
+		return checkNightlySwitch(info)
+	case ChannelStable:
+		if currentIsNightly {
+			// Cross-channel: user on nightly wants to return to stable.
+			return checkStableDowngrade(info)
+		}
+		return checkStableUpdate(info)
+	default:
+		info.Error = fmt.Sprintf("Unknown update channel: %q", channel)
+		return info
+	}
 }
 
 // checkStableUpdate checks for a newer stable release via /releases/latest.
@@ -93,6 +123,78 @@ func checkStableUpdate(info UpdateInfo) UpdateInfo {
 	}
 
 	return info
+}
+
+// checkStableDowngrade is called when the running build is a nightly but the
+// user has selected the stable channel. Any existing stable release is
+// reported as available with IsDowngrade=true so the UI can prompt the user
+// to switch back to stable.
+func checkStableDowngrade(info UpdateInfo) UpdateInfo {
+	release, err := fetchLatestRelease(fmt.Sprintf(
+		"https://api.github.com/repos/%s/%s/releases/latest", repoOwner, repoName))
+	if err != nil {
+		if err == errReleaseNotFound {
+			return info
+		}
+		info.Error = err.Error()
+		return info
+	}
+
+	info.Available = true
+	info.IsDowngrade = true
+	info.Latest = release.TagName
+	info.ReleaseURL = release.HTMLURL
+	info.DownloadURL = findPlatformAsset(release.Assets)
+	return info
+}
+
+// checkNightlySwitch is called when the running build is stable but the
+// user has selected the nightly channel. If a nightly release exists it is
+// reported as available so the UI can prompt the user to switch.
+func checkNightlySwitch(info UpdateInfo) UpdateInfo {
+	release, err := fetchLatestRelease(fmt.Sprintf(
+		"https://api.github.com/repos/%s/%s/releases/tags/nightly", repoOwner, repoName))
+	if err != nil {
+		if err == errReleaseNotFound {
+			return info
+		}
+		info.Error = err.Error()
+		return info
+	}
+
+	info.Available = true
+	info.Latest = release.TagName
+	info.ReleaseURL = release.HTMLURL
+	info.DownloadURL = findPlatformAsset(release.Assets)
+	return info
+}
+
+// errReleaseNotFound is returned by fetchLatestRelease when the GitHub API
+// responds with 404 (no release for the requested tag).
+var errReleaseNotFound = fmt.Errorf("release not found")
+
+// fetchLatestRelease performs a GET against a GitHub releases endpoint and
+// decodes the response. Returns errReleaseNotFound for 404 responses.
+func fetchLatestRelease(url string) (githubRelease, error) {
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(url)
+	if err != nil {
+		return githubRelease{}, fmt.Errorf("Failed to check for updates: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return githubRelease{}, errReleaseNotFound
+	}
+	if resp.StatusCode != http.StatusOK {
+		return githubRelease{}, fmt.Errorf("GitHub API returned status %d", resp.StatusCode)
+	}
+
+	var release githubRelease
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		return githubRelease{}, fmt.Errorf("Failed to parse response: %v", err)
+	}
+	return release, nil
 }
 
 // checkNightlyUpdate checks if the nightly release has a newer commit than

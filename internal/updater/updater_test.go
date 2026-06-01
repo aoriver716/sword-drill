@@ -68,3 +68,33 @@ func TestExtractNightlySHA(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckForUpdatesDevBuildErrors(t *testing.T) {
+	orig := Version
+	defer func() { Version = orig }()
+
+	cases := []string{"dev", "pr-123"}
+	for _, v := range cases {
+		Version = v
+		for _, ch := range []string{ChannelStable, ChannelNightly, ""} {
+			info := CheckForUpdates(ch)
+			if info.Error == "" {
+				t.Errorf("Version=%q channel=%q: expected error, got none", v, ch)
+			}
+			if info.Available {
+				t.Errorf("Version=%q channel=%q: expected Available=false", v, ch)
+			}
+		}
+	}
+}
+
+func TestCheckForUpdatesUnknownChannel(t *testing.T) {
+	orig := Version
+	defer func() { Version = orig }()
+	Version = "v0.4.1"
+
+	info := CheckForUpdates("beta")
+	if info.Error == "" {
+		t.Error("expected error for unknown channel")
+	}
+}
