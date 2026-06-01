@@ -1,5 +1,6 @@
 // preferences.js — Preferences dialog rendering and control creation.
 import { translationOptions } from "./translations.js";
+import { checkAndShowBanner } from "./about.js";
 
 const prefsDialog = document.getElementById("prefs-dialog");
 const prefsBackdrop = document.getElementById("prefs-backdrop");
@@ -62,6 +63,14 @@ async function applyPendingChanges() {
         await window.go.gui.App.UpdateConfigField(key, value);
     }
     pendingChanges = {};
+
+    // After settings are saved, re-check for updates so the user sees the
+    // effect of any update-related preference change (channel, etc.) right
+    // away. Fire-and-forget; failures are silent (the About dialog and
+    // banner already surface errors).
+    if (await window.go.gui.App.ShouldCheckForUpdates()) {
+        checkAndShowBanner();
+    }
 }
 
 export async function openPreferences() {

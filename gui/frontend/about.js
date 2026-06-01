@@ -56,17 +56,18 @@ function checkForUpdates() {
         }
 
         if (info.available) {
+            const verb = info.isDowngrade ? "Downgrade to the stable version" : "Update available";
             aboutUpdateStatus.className = "about-update-status update-available";
             if (info.downloadURL) {
                 aboutUpdateStatus.innerHTML =
-                    `Update available: ${info.latest} — <a href="#" id="about-download-link">Download</a>`;
+                    `${verb}: ${info.latest} — <a href="#" id="about-download-link">Download</a>`;
                 document.getElementById("about-download-link").addEventListener("click", (e) => {
                     e.preventDefault();
                     window.runtime.BrowserOpenURL(info.downloadURL);
                 });
             } else {
                 aboutUpdateStatus.innerHTML =
-                    `Update available: ${info.latest} — <a href="#" id="about-release-link">View release</a>`;
+                    `${verb}: ${info.latest} — <a href="#" id="about-release-link">View release</a>`;
                 document.getElementById("about-release-link").addEventListener("click", (e) => {
                     e.preventDefault();
                     window.runtime.BrowserOpenURL(info.releaseURL);
@@ -87,20 +88,33 @@ window.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
         window.go.gui.App.ShouldCheckForUpdates().then((shouldCheck) => {
             if (!shouldCheck) return;
-            window.go.gui.App.CheckForUpdates().then((info) => {
-                if (info.available && !info.error) {
-                    showUpdateBanner(info);
-                }
-            });
+            checkAndShowBanner();
         });
     }, 1000);
 });
 
+// checkAndShowBanner runs an update check and, if a release is available,
+// shows (or replaces) the top-of-window banner. Exported so the Preferences
+// dialog can re-trigger a check after the user applies new settings.
+export function checkAndShowBanner() {
+    return window.go.gui.App.CheckForUpdates().then((info) => {
+        if (info.error) return info;
+        const existing = document.querySelector(".update-banner");
+        if (existing) existing.remove();
+        if (info.available) {
+            showUpdateBanner(info);
+        }
+        return info;
+    });
+}
+
 function showUpdateBanner(info) {
     const banner = document.createElement("div");
     banner.className = "update-banner";
-    banner.innerHTML = `Update available: ${info.latest}
-        <a href="#" id="update-banner-link">View</a>
+    const verb = info.isDowngrade ? "Downgrade to the stable version" : "Update available";
+    const linkText = info.downloadURL ? "Download" : "View release";
+    banner.innerHTML = `${verb}: ${info.latest}
+        <a href="#" id="update-banner-link">${linkText}</a>
         <button id="update-banner-dismiss">&times;</button>`;
     document.getElementById("app").prepend(banner);
 

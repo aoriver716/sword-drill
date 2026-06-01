@@ -14,4 +14,5 @@ type Config struct {
 	FormattingOptions   FormattingOptions `json:"formatting_options"`
 	TabOpenBehavior     string            `json:"tab_open_behavior"`
 	CheckForUpdates     bool              `json:"check_for_updates"`
+	UpdateChannel       string            `json:"update_channel"`
 }

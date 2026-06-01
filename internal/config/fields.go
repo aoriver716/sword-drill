@@ -122,4 +122,16 @@ func RegisterFields(r *Registry) {
 		Getter:      func(c *Config) any { return c.CheckForUpdates },
 		Setter:      func(c *Config, v any) { c.CheckForUpdates, _ = v.(bool) },
 	})
+
+	r.Register(FieldDef{
+		Key: "update_channel", Label: "Update Channel", Group: "General",
+		Description: "Which release channel to check for updates (Stable or Nightly)",
+		Widget:      WidgetSelect, Default: "stable",
+		Options: []Option{
+			{Label: "Stable", Value: "stable"},
+			{Label: "Nightly", Value: "nightly"},
+		},
+		Getter: func(c *Config) any { return c.UpdateChannel },
+		Setter: func(c *Config, v any) { c.UpdateChannel, _ = v.(string) },
+	})
 }

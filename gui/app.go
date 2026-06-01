@@ -386,7 +386,13 @@ func (a *App) LoadTabState() *TabsFile {
 
 // CheckForUpdates queries GitHub for the latest release and returns update info.
 func (a *App) CheckForUpdates() updater.UpdateInfo {
-	return updater.CheckForUpdates()
+	channel := updater.ChannelStable
+	if a.registry != nil {
+		if c := a.registry.Config().UpdateChannel; c != "" {
+			channel = c
+		}
+	}
+	return updater.CheckForUpdates(channel)
 }
 
 // GetVersion returns the current application version.
