@@ -52,7 +52,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          & "C:\Program Files (x86)\NSIS\makensis.exe" /DVERSION=${{ github.ref_name }} /DOUTPUT=sword-drill-windows-amd64-setup.exe installer/windows/sword-drill.nsi
+          & "C:\Program Files (x86)\NSIS\makensis.exe" /DVERSION=${{ github.ref_name }} /DOUTPUT=sword-drill-windows-amd64-setup.exe /DEXE_PATH=${{ github.workspace }}\build\bin\sword-drill.exe installer/windows/sword-drill.nsi
 
       - name: Build (macOS)
         if: matrix.os == 'macos-latest'
