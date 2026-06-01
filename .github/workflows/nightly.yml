@@ -113,7 +113,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sword-drill-windows-amd64-setup.exe
-          path: sword-drill-windows-amd64-setup.exe
+          path: installer/windows/sword-drill-windows-amd64-setup.exe
 
   release:
     needs: build
