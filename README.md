@@ -14,14 +14,17 @@ Don't you hate it when you're reading a great article and the author drops a scr
 
 ## Download
 
-| Channel | Link | Description |
-|---------|------|-------------|
-| **Stable** | [Latest Release](https://github.com/aoriver716/sword-drill/releases/latest) | Recommended for most users |
-| **Nightly** | [Nightly Build](https://github.com/aoriver716/sword-drill/releases/tag/nightly) | Latest from `main` — may be unstable |
+[![Latest Release](https://img.shields.io/github/v/release/aoriver716/sword-drill)](https://github.com/aoriver716/sword-drill/releases/latest)
 
-Available for **Windows** and **macOS**.
+### Windows
 
-Windows releases include both a portable executable (`sword-drill-windows-amd64.exe`) and an NSIS installer (`sword-drill-windows-amd64-setup.exe`).
+📦 [Latest Stable](https://github.com/aoriver716/sword-drill/releases/latest/download/sword-drill-windows-amd64-setup.exe) · 🌙 [Nightly](https://github.com/aoriver716/sword-drill/releases/download/nightly/sword-drill-windows-amd64-setup.exe)
+
+### macOS
+
+📦 [Latest Stable](https://github.com/aoriver716/sword-drill/releases/latest/download/sword-drill-macos-universal.app.zip) · 🌙 [Nightly](https://github.com/aoriver716/sword-drill/releases/download/nightly/sword-drill-macos-universal.app.zip)
+
+> 💡 **Stable** is recommended for most users. **Nightly** builds include the latest changes from `main` but may be unstable.
 
 ## Building from Source
 
