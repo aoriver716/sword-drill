@@ -1,6 +1,22 @@
 package config
 
-import "github.com/aoriver716/sword-drill/internal/lookup"
+import (
+	"strings"
+
+	"github.com/aoriver716/sword-drill/internal/lookup"
+	"github.com/aoriver716/sword-drill/internal/updater"
+)
+
+// defaultUpdateChannel returns the update channel a fresh install should
+// default to. Nightly builds default to the nightly channel so they don't
+// immediately prompt the user to downgrade to stable; everything else
+// defaults to stable.
+func defaultUpdateChannel() string {
+	if strings.HasPrefix(updater.Version, "nightly-") {
+		return updater.ChannelNightly
+	}
+	return updater.ChannelStable
+}
 
 // RegisterFields registers all lookup providers and config fields on the given registry.
 func RegisterFields(r *Registry) {
@@ -119,14 +135,14 @@ func RegisterFields(r *Registry) {
 		Key: "check_for_updates", Label: "Check for Updates on Startup", Group: "General",
 		Description: "Automatically check for new versions when the app starts",
 		Widget:      WidgetToggle, Default: true,
-		Getter:      func(c *Config) any { return c.CheckForUpdates },
-		Setter:      func(c *Config, v any) { c.CheckForUpdates, _ = v.(bool) },
+		Getter: func(c *Config) any { return c.CheckForUpdates },
+		Setter: func(c *Config, v any) { c.CheckForUpdates, _ = v.(bool) },
 	})
 
 	r.Register(FieldDef{
 		Key: "update_channel", Label: "Update Channel", Group: "General",
 		Description: "Which release channel to check for updates (Stable or Nightly)",
-		Widget:      WidgetSelect, Default: "stable",
+		Widget:      WidgetSelect, Default: defaultUpdateChannel(),
 		Options: []Option{
 			{Label: "Stable", Value: "stable"},
 			{Label: "Nightly", Value: "nightly"},
