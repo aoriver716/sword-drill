@@ -8,6 +8,13 @@
 !define OUTPUT "sword-drill-windows-amd64-setup.exe"
 !endif
 
+; Path to the built sword-drill.exe to package. Override with /DEXE_PATH=...
+; Default is relative to this script (installer/windows/) so makensis can be
+; run directly from the repo root after `wails build`.
+!ifndef EXE_PATH
+!define EXE_PATH "..\..\build\bin\sword-drill.exe"
+!endif
+
 !define APP_NAME "Sword Drill"
 !define COMPANY_NAME "Jonathan Beechner"
 !define INSTALL_DIR "$PROGRAMFILES64\Sword Drill"
@@ -37,7 +44,7 @@ Section "Install"
     SetOutPath "$INSTDIR"
     SetOverwrite on
 
-    File "build\bin\sword-drill.exe"
+    File "/oname=sword-drill.exe" "${EXE_PATH}"
     WriteUninstaller "$INSTDIR\Uninstall.exe"
 
     CreateDirectory "$SMPROGRAMS\Sword Drill"
