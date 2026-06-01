@@ -112,8 +112,9 @@ function showUpdateBanner(info) {
     const banner = document.createElement("div");
     banner.className = "update-banner";
     const verb = info.isDowngrade ? "Downgrade to the stable version" : "Update available";
+    const linkText = info.downloadURL ? "Download" : "View release";
     banner.innerHTML = `${verb}: ${info.latest}
-        <a href="#" id="update-banner-link">View</a>
+        <a href="#" id="update-banner-link">${linkText}</a>
         <button id="update-banner-dismiss">&times;</button>`;
     document.getElementById("app").prepend(banner);
 
