@@ -22,7 +22,7 @@ Don't you hate it when you're reading a great article and the author drops a scr
 
 ### macOS
 
-📦 [Latest Stable](https://github.com/aoriver716/sword-drill/releases/latest/download/sword-drill-macos-universal.app.zip) · 🌙 [Nightly](https://github.com/aoriver716/sword-drill/releases/download/nightly/sword-drill-macos-universal.app.zip)
+📦 [Latest Stable](https://github.com/aoriver716/sword-drill/releases/latest/download/sword-drill-macos-universal.app.zip) · 🌙 [Nightly (.dmg)](https://github.com/aoriver716/sword-drill/releases/download/nightly/sword-drill-macos-universal.dmg)
 
 > 💡 **Stable** is recommended for most users. **Nightly** builds include the latest changes from `main` but may be unstable.
 

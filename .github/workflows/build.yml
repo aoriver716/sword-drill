@@ -67,11 +67,30 @@ jobs:
           cd build/bin
           zip -r "../../${{ matrix.artifact }}" *.app
 
+      - name: Create macOS DMG
+        if: matrix.os == 'macos-latest'
+        run: |
+          # Create a temporary directory for DMG contents
+          mkdir -p dmg-staging
+          APP=$(find build/bin -name "*.app" -maxdepth 1)
+          cp -R "$APP" dmg-staging/
+          # Add a symlink to /Applications for drag-and-drop install
+          ln -s /Applications dmg-staging/Applications
+          # Create the DMG
+          hdiutil create -volname "Sword Drill" -srcfolder dmg-staging -ov -format UDZO sword-drill-macos-universal.dmg
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.artifact }}
+
+      - name: Upload macOS DMG artifact
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sword-drill-macos-universal.dmg
+          path: sword-drill-macos-universal.dmg
 
       - name: Upload Windows installer artifact
         if: matrix.os == 'windows-latest'
