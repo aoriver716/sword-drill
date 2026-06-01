@@ -213,13 +213,18 @@ func findPlatformAsset(assets []githubAsset) string {
 }
 
 // isNewer returns true if latest is a newer version than current.
-// Expects semver-like tags: v1.2.3
+// Expects semver-like tags: v1.2.3 or v1.2.3-rc1
+// An RC version is considered older than the same base version without RC.
 func isNewer(latest, current string) bool {
 	latest = strings.TrimPrefix(latest, "v")
 	current = strings.TrimPrefix(current, "v")
 
-	latestParts := strings.Split(latest, ".")
-	currentParts := strings.Split(current, ".")
+	// Split off pre-release suffix
+	latestBase, latestPre := splitPrerelease(latest)
+	currentBase, currentPre := splitPrerelease(current)
+
+	latestParts := strings.Split(latestBase, ".")
+	currentParts := strings.Split(currentBase, ".")
 
 	for i := 0; i < len(latestParts) && i < len(currentParts); i++ {
 		l := toInt(latestParts[i])
@@ -231,7 +236,25 @@ func isNewer(latest, current string) bool {
 			return false
 		}
 	}
-	return len(latestParts) > len(currentParts)
+
+	if len(latestParts) != len(currentParts) {
+		return len(latestParts) > len(currentParts)
+	}
+
+	// Same base version: stable is newer than RC
+	if currentPre != "" && latestPre == "" {
+		return true
+	}
+
+	return false
+}
+
+// splitPrerelease splits "1.2.3-rc1" into ("1.2.3", "rc1").
+func splitPrerelease(version string) (string, string) {
+	if idx := strings.Index(version, "-"); idx != -1 {
+		return version[:idx], version[idx+1:]
+	}
+	return version, ""
 }
 
 // toInt converts a string to an integer, returning 0 on failure.

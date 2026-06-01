@@ -16,6 +16,13 @@ func TestIsNewer(t *testing.T) {
 		{"v0.3.9", "v0.4.1", false},
 		{"v2.0.0", "v1.9.9", true},
 		{"v0.10.0", "v0.9.0", true},
+		// RC scenarios
+		{"v0.7.0", "v0.7.0-rc1", true},      // stable is newer than RC of same version
+		{"v0.7.0", "v0.7.0-rc3", true},      // stable is newer than any RC
+		{"v0.6.0", "v0.7.0-rc1", false},     // older stable is not newer than RC of higher version
+		{"v0.7.0-rc1", "v0.7.0", false},     // RC is not newer than stable of same version
+		{"v0.7.0-rc2", "v0.7.0-rc1", false}, // same base, both RC — not newer
+		{"v0.8.0", "v0.7.0-rc1", true},      // higher stable is newer than lower RC
 	}
 
 	for _, tt := range tests {
