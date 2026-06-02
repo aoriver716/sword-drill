@@ -4,6 +4,7 @@ go 1.24
 
 require (
 	github.com/wailsapp/wails/v2 v2.12.0
+	go.etcd.io/bbolt v1.4.3
 	golang.design/x/clipboard v0.7.1
 )
 

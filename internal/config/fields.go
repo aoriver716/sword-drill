@@ -150,4 +150,17 @@ func RegisterFields(r *Registry) {
 		Getter: func(c *Config) any { return c.UpdateChannel },
 		Setter: func(c *Config, v any) { c.UpdateChannel, _ = v.(string) },
 	})
+
+	r.Register(FieldDef{
+		Key: "clear_scripture_cache", Label: "Clear Scripture Cache", Group: "General",
+		Description: "Delete all cached scripture lookups. Next requests will hit the API.",
+		Widget:      WidgetButton,
+		Action: func() error {
+			c := r.Cache()
+			if c == nil {
+				return nil
+			}
+			return c.Clear()
+		},
+	})
 }

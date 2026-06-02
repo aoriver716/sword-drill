@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
@@ -66,6 +66,7 @@ func (c *APIBibleClient) Lookup(ref detector.ScriptureRef, translation string) (
 		return LookupResult{}, fmt.Errorf("api.bible request failed: %w", err)
 	}
 	defer resp.Body.Close()
+	log.Printf("api.bible GET %s/%s [%s] → %d", translation, passageID, ref.String(), resp.StatusCode)
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -267,49 +268,30 @@ func bookNameToID(name string) string {
 	return strings.ToUpper(name)
 }
 
-const translationsCacheFile = ".apibible_translations.json"
+const translationsLanguage = "eng"
 
-// Translations returns the available Bible translations from the local cache.
-// Returns an error if the cache file does not exist — call RefreshTranslations first.
+// Translations returns the available English-language Bible translations
+// from API.Bible, de-duplicated to one entry per base DBL ID and filtered
+// to translations that contain the full Protestant canon. Each call hits
+// the API; caching is handled by the CachedLookup decorator.
 func (c *APIBibleClient) Translations() ([]Translation, error) {
-	data, err := os.ReadFile(translationsCacheFile)
-	if err != nil {
-		return nil, fmt.Errorf("translations cache not found; call RefreshTranslations to populate it: %w", err)
-	}
-	var translations []Translation
-	if err := json.Unmarshal(data, &translations); err != nil {
-		return nil, fmt.Errorf("failed to parse translations cache: %w", err)
-	}
-	return translations, nil
-}
-
-// RefreshTranslations fetches available Bibles from API.Bible and caches them locally.
-// If a valid cache file already exists, the network call is skipped.
-func (c *APIBibleClient) RefreshTranslations() error {
-	// Skip if the cache already exists and is parseable.
-	if data, err := os.ReadFile(translationsCacheFile); err == nil {
-		var cached []Translation
-		if err := json.Unmarshal(data, &cached); err == nil && len(cached) > 0 {
-			return nil
-		}
-	}
-
-	reqURL := fmt.Sprintf("%s/bibles?language=eng", c.BaseURL)
+	reqURL := fmt.Sprintf("%s/bibles?language=%s", c.BaseURL, translationsLanguage)
 	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
-		return fmt.Errorf("api.bible translations request build failed: %w", err)
+		return nil, fmt.Errorf("api.bible translations request build failed: %w", err)
 	}
 	req.Header.Set("api-key", apiKey)
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("api.bible translations request failed: %w", err)
+		return nil, fmt.Errorf("api.bible translations request failed: %w", err)
 	}
 	defer resp.Body.Close()
+	log.Printf("api.bible GET translations → %d", resp.StatusCode)
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("api.bible translations returned status %d: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("api.bible translations returned status %d: %s", resp.StatusCode, string(body))
 	}
 
 	var apiResp struct {
@@ -321,21 +303,21 @@ func (c *APIBibleClient) RefreshTranslations() error {
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
-		return fmt.Errorf("api.bible translations response decode failed: %w", err)
+		return nil, fmt.Errorf("api.bible translations response decode failed: %w", err)
 	}
 
 	// De-duplicate translations that share the same base DBL ID (the part
-	// before the hyphen-suffix).  These are canon variants (Protestant,
-	// Catholic, Orthodox, Ecumenical) of the same translation text.
-	// Keep "Protestant" when available; otherwise keep whichever entry
-	// comes first so every translation is represented at least once.
+	// before the hyphen-suffix). These are canon variants (Protestant,
+	// Catholic, Orthodox, Ecumenical) of the same translation text. Keep
+	// "Protestant" when available; otherwise keep the first entry so every
+	// translation is represented at least once.
 	type candidate struct {
 		Name        string
 		Key         string
 		Description string
 	}
-	best := make(map[string]candidate) // keyed by dblId (base ID)
-	order := []string{}                // preserve insertion order
+	best := make(map[string]candidate)
+	order := []string{}
 	for _, b := range apiResp.Data {
 		base := b.ID
 		if idx := strings.LastIndex(b.ID, "-"); idx != -1 {
@@ -353,22 +335,12 @@ func (c *APIBibleClient) RefreshTranslations() error {
 	translations := make([]Translation, 0, len(best))
 	for _, base := range order {
 		cand := best[base]
-		// Only include translations that have all 66 Protestant-canon books.
 		if !c.hasFullCanon(cand.Key) {
 			continue
 		}
 		translations = append(translations, Translation{Name: cand.Name, Key: cand.Key})
 	}
-
-	data, err := json.MarshalIndent(translations, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal translations: %w", err)
-	}
-	if err := os.WriteFile(translationsCacheFile, data, 0644); err != nil {
-		return fmt.Errorf("failed to write translations cache: %w", err)
-	}
-
-	return nil
+	return translations, nil
 }
 
 // hasFullCanon returns true if the Bible has at least 66 books (full Protestant canon).

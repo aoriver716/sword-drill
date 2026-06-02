@@ -7,8 +7,10 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/aoriver716/sword-drill/gui"
+	"github.com/aoriver716/sword-drill/internal/cache"
 	"github.com/aoriver716/sword-drill/internal/config"
 	"github.com/aoriver716/sword-drill/internal/detector"
 	"github.com/aoriver716/sword-drill/internal/formatter"
@@ -38,7 +40,35 @@ func initConfig() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
+	initCache()
+
 	bible = registry.BibleLookup()
+}
+
+// initCache opens the persistent scripture cache and attaches it to the
+// registry. Failures are logged but non-fatal — the app continues to work
+// with caching disabled.
+func initCache() {
+	cacheDir, err := os.UserCacheDir()
+	if err != nil {
+		log.Printf("WARNING: cache disabled (no user cache dir): %v", err)
+		return
+	}
+	cachePath := filepath.Join(cacheDir, "sword-drill", "cache.db")
+	ttl := time.Duration(registry.Config().CacheTTLDays) * 24 * time.Hour
+	c, err := cache.Open(cachePath, ttl)
+	if err != nil {
+		log.Printf("WARNING: cache disabled: %v", err)
+		return
+	}
+	registry.SetCache(c)
+	go func() {
+		if n, err := c.Sweep(); err != nil {
+			log.Printf("WARNING: cache sweep failed: %v", err)
+		} else if n > 0 {
+			log.Printf("cache: swept %d expired entries", n)
+		}
+	}()
 }
 
 func lookupChapter(book string, chapter int, translation string) ([]gui.ChapterVerse, error) {
@@ -50,9 +80,6 @@ func lookupChapter(book string, chapter int, translation string) ([]gui.ChapterV
 	result, err := bible.Lookup(ref, translation)
 	if err != nil {
 		return nil, err
-	}
-	if result.SourceURL != nil {
-		log.Printf("OK [%d] chapter %s %d → %s", result.StatusCode, book, chapter, *result.SourceURL)
 	}
 	verses := make([]gui.ChapterVerse, len(result.Verses))
 	for i, v := range result.Verses {
@@ -90,11 +117,6 @@ func watchClipboard(ctx context.Context, display gui.ScriptureDisplay) {
 					IsError:   true,
 				})
 			} else {
-				if lr.SourceURL != nil {
-					log.Printf("OK [%d] %s → %s", lr.StatusCode, ref, *lr.SourceURL)
-				} else {
-					log.Printf("OK %s (%d verses)", ref, len(lr.Verses))
-				}
 				results = append(results, gui.ScriptureResult{
 					Reference:  lr.Reference,
 					Text:       formatter.Format(lr, registry.Config()),
