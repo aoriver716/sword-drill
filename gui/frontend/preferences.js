@@ -107,6 +107,9 @@ async function renderPreferences() {
         for (const field of groups[groupName]) {
             const fieldDiv = document.createElement("div");
             fieldDiv.className = "prefs-field";
+            if (field.widget === "button") {
+                fieldDiv.classList.add("prefs-field-button");
+            }
 
             const info = document.createElement("div");
             info.className = "prefs-field-info";
@@ -209,6 +212,21 @@ function createControl(field) {
                 pendingChanges[field.key] = parseFloat(input.value);
             });
             return input;
+        }
+        case "button": {
+            const btn = document.createElement("button");
+            btn.className = "prefs-button";
+            btn.type = "button";
+            btn.textContent = field.label;
+            btn.addEventListener("click", async () => {
+                btn.disabled = true;
+                try {
+                    await window.go.gui.App.InvokeFieldAction(field.key);
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+            return btn;
         }
         default:
             return null;

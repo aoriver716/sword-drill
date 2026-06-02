@@ -2,9 +2,12 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
+	"time"
 
+	"github.com/aoriver716/sword-drill/internal/cache"
 	"github.com/aoriver716/sword-drill/internal/lookup"
 )
 
@@ -25,6 +28,7 @@ const (
 	WidgetSelect WidgetType = "select"
 	WidgetText   WidgetType = "text"
 	WidgetNumber WidgetType = "number"
+	WidgetButton WidgetType = "button"
 )
 
 // Option represents a selectable value for select/radio widgets.
@@ -62,6 +66,7 @@ type FieldDef struct {
 	RequiresRestart func(*Registry) bool // evaluated at runtime; nil means false
 	Getter          func(*Config) any
 	Setter          func(*Config, any)
+	Action          func() error // invoked for WidgetButton fields
 }
 
 // requiresRestart returns whether this field currently requires a restart.
@@ -80,6 +85,7 @@ type Registry struct {
 	pending   map[string]any // buffered values for RequiresRestart fields
 	path      string
 	onChange  func(*Config)
+	cache     *cache.Cache
 }
 
 // NewRegistry creates a registry that loads/saves from the given path.
@@ -101,17 +107,47 @@ func (r *Registry) RegisterProvider(p LookupProvider) {
 	r.providers = append(r.providers, p)
 }
 
+// SetCache attaches a cache to the registry. Subsequent BibleLookup /
+// PendingBibleLookup calls will return clients wrapped by the cache
+// decorator. Pass nil to disable caching.
+func (r *Registry) SetCache(c *cache.Cache) {
+	r.cache = c
+	if c != nil {
+		c.SetTTL(time.Duration(r.cfg.CacheTTLDays) * 24 * time.Hour)
+	}
+}
+
+// Cache returns the currently attached cache, or nil.
+func (r *Registry) Cache() *cache.Cache {
+	return r.cache
+}
+
+// InvokeAction looks up a field by key and calls its Action callback.
+// Returns an error if the field is missing or has no Action.
+func (r *Registry) InvokeAction(key string) error {
+	for _, f := range r.fields {
+		if f.Key != key {
+			continue
+		}
+		if f.Action == nil {
+			return fmt.Errorf("config: field %q has no action", key)
+		}
+		return f.Action()
+	}
+	return fmt.Errorf("config: unknown field %q", key)
+}
+
 // BibleLookup returns the BibleLookup client for the currently configured API.
 func (r *Registry) BibleLookup() lookup.BibleLookup {
 	for _, p := range r.providers {
 		if p.Key == r.cfg.BibleTextAPI {
-			return p.Factory(&r.cfg)
+			return lookup.WithCache(p.Factory(&r.cfg), r.cache, p.Key)
 		}
 	}
 	// Fallback to first available provider
 	for _, p := range r.providers {
 		if p.Available() {
-			return p.Factory(&r.cfg)
+			return lookup.WithCache(p.Factory(&r.cfg), r.cache, p.Key)
 		}
 	}
 	return nil
@@ -129,12 +165,12 @@ func (r *Registry) PendingBibleLookup() lookup.BibleLookup {
 	}
 	for _, p := range r.providers {
 		if p.Key == apiKey {
-			return p.Factory(&r.cfg)
+			return lookup.WithCache(p.Factory(&r.cfg), r.cache, p.Key)
 		}
 	}
 	for _, p := range r.providers {
 		if p.Available() {
-			return p.Factory(&r.cfg)
+			return lookup.WithCache(p.Factory(&r.cfg), r.cache, p.Key)
 		}
 	}
 	return nil
@@ -187,6 +223,14 @@ func (r *Registry) Load() error {
 		return err
 	}
 
+	// Clamp the cache TTL to the API.Bible 30-day maximum. Treat 0 / negative
+	// as "use the default". The clamp is applied to the in-memory copy only;
+	// the on-disk value is reconciled the next time Save runs.
+	r.clampCacheTTL()
+	if r.cache != nil {
+		r.cache.SetTTL(time.Duration(r.cfg.CacheTTLDays) * 24 * time.Hour)
+	}
+
 	// Re-check after loading from disk
 	if r.ensureAvailableProvider() {
 		_ = r.Save()
@@ -227,7 +271,7 @@ func (r *Registry) Save() error {
 	// Build a copy of cfg with pending values applied for serialization.
 	tmp := r.cfg
 	for _, f := range r.fields {
-		if v, ok := r.pending[f.Key]; ok {
+		if v, ok := r.pending[f.Key]; ok && f.Setter != nil {
 			f.Setter(&tmp, v)
 		}
 	}
@@ -256,10 +300,12 @@ func (r *Registry) Schema() []FieldSchema {
 		if f.Key == "bible_text_api" {
 			opts = r.providerOptions()
 		}
-		// Use pending value for the UI if one is buffered.
-		value := f.Getter(&r.cfg)
-		if v, ok := r.pending[f.Key]; ok {
-			value = v
+		var value any
+		if f.Widget != WidgetButton && f.Getter != nil {
+			value = f.Getter(&r.cfg)
+			if v, ok := r.pending[f.Key]; ok {
+				value = v
+			}
 		}
 		schemas[i] = FieldSchema{
 			Key:             f.Key,
@@ -296,6 +342,9 @@ func (r *Registry) Update(key string, value any) error {
 	for _, f := range r.fields {
 		if f.Key != key {
 			continue
+		}
+		if f.Setter == nil {
+			return nil
 		}
 
 		if f.requiresRestart(r) {
@@ -342,6 +391,18 @@ func (r *Registry) ResetToDefaults() error {
 // applyDefaults sets all config fields to their registered default values.
 func (r *Registry) applyDefaults() {
 	for _, f := range r.fields {
-		f.Setter(&r.cfg, f.Default)
+		if f.Setter != nil {
+			f.Setter(&r.cfg, f.Default)
+		}
+	}
+}
+
+// clampCacheTTL normalises the configured TTL into the supported range.
+// API.Bible caps caching at 30 days so we cap there too; a missing or
+// non-positive value falls back to the maximum.
+func (r *Registry) clampCacheTTL() {
+	const maxDays = 30
+	if r.cfg.CacheTTLDays <= 0 || r.cfg.CacheTTLDays > maxDays {
+		r.cfg.CacheTTLDays = maxDays
 	}
 }

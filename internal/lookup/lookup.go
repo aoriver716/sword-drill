@@ -29,8 +29,10 @@ type Translation struct {
 
 // BibleLookup is the interface for retrieving scripture text.
 // Implementations may use a remote API, local database, etc.
+//
+// Refreshing cached translation lists is not part of this interface; it is
+// provided by CachedLookup (see cached.go).
 type BibleLookup interface {
 	Lookup(ref detector.ScriptureRef, translation string) (LookupResult, error)
 	Translations() ([]Translation, error)
-	RefreshTranslations() error
 }

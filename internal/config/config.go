@@ -15,4 +15,5 @@ type Config struct {
 	TabOpenBehavior     string            `json:"tab_open_behavior"`
 	CheckForUpdates     bool              `json:"check_for_updates"`
 	UpdateChannel       string            `json:"update_channel"`
+	CacheTTLDays        int               `json:"cache_ttl_days"`
 }

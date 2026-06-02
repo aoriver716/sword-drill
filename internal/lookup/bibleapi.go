@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -51,6 +52,7 @@ func (c *BibleAPIClient) Lookup(ref detector.ScriptureRef, translation string) (
 		return LookupResult{}, fmt.Errorf("bible-api request failed: %w", err)
 	}
 	defer resp.Body.Close()
+	log.Printf("bible-api GET %s [%s] → %d", query, translation, resp.StatusCode)
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -112,9 +114,4 @@ func (c *BibleAPIClient) Translations() ([]Translation, error) {
 		{Name: "Almeida Revised (Portuguese)", Key: "almeida"},
 		{Name: "Reina-Valera 1909 (Spanish)", Key: "rva"},
 	}, nil
-}
-
-// RefreshTranslations is a no-op for bible-api.com (translations are hardcoded).
-func (c *BibleAPIClient) RefreshTranslations() error {
-	return nil
 }

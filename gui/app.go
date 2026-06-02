@@ -9,6 +9,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/aoriver716/sword-drill/internal/cache"
 	"github.com/aoriver716/sword-drill/internal/config"
 	"github.com/aoriver716/sword-drill/internal/updater"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -101,7 +102,9 @@ func (a *App) ResetConfigToDefaults() error {
 	return a.registry.ResetToDefaults()
 }
 
-// RefreshTranslations refreshes the translation list from the current Bible API.
+// RefreshTranslations invalidates any cached translation list so the next
+// call refetches from the current provider. No-op when the cache is not
+// attached.
 func (a *App) RefreshTranslations() error {
 	if a.registry == nil {
 		return nil
@@ -110,7 +113,33 @@ func (a *App) RefreshTranslations() error {
 	if bible == nil {
 		return nil
 	}
-	return bible.RefreshTranslations()
+	if r, ok := bible.(interface{ RefreshTranslations() error }); ok {
+		return r.RefreshTranslations()
+	}
+	return nil
+}
+
+// InvokeFieldAction triggers the Action callback associated with a config
+// field (used by button-type widgets such as "Clear Scripture Cache").
+func (a *App) InvokeFieldAction(key string) error {
+	if a.registry == nil {
+		return nil
+	}
+	return a.registry.InvokeAction(key)
+}
+
+// CacheStats reports the current state of the scripture cache. Returns a
+// zero-value Stats when the cache is disabled.
+func (a *App) CacheStats() cache.Stats {
+	if a.registry == nil {
+		return cache.Stats{}
+	}
+	c := a.registry.Cache()
+	if c == nil {
+		return cache.Stats{}
+	}
+	s, _ := c.Stats()
+	return s
 }
 
 // Startup is called when the Wails app starts.
@@ -120,13 +149,6 @@ func (a *App) Startup(ctx context.Context) {
 		a.registry.OnChange(func(cfg *config.Config) {
 			a.emitFormatOptions(cfg)
 		})
-		if bible := a.registry.BibleLookup(); bible != nil {
-			go func() {
-				if err := bible.RefreshTranslations(); err != nil {
-					log.Printf("WARNING: failed to refresh translations on startup: %v", err)
-				}
-			}()
-		}
 	}
 }
 
@@ -355,6 +377,11 @@ func (a *App) Quit() {
 // unless Quit() was called explicitly (closing flag set).
 func (a *App) BeforeClose(ctx context.Context) bool {
 	if a.closing.Load() {
+		if a.registry != nil {
+			if c := a.registry.Cache(); c != nil {
+				_ = c.Close()
+			}
+		}
 		return false
 	}
 	runtime.EventsEmit(ctx, "app:beforeClose")

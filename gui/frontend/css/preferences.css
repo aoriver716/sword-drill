@@ -144,6 +144,26 @@
     transform: translateX(16px);
 }
 
+.prefs-button {
+    font-size: var(--font-size-sm);
+    padding: 4px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-button);
+    color: var(--color-text);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.prefs-button:hover:not(:disabled) {
+    background: var(--color-bg-button-hover);
+}
+
+.prefs-button:disabled {
+    opacity: 0.6;
+    cursor: progress;
+}
+
 .prefs-footer {
     display: flex;
     justify-content: space-between;
