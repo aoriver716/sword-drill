@@ -41,6 +41,16 @@ func RegisterFields(r *Registry) {
 		Available: func() bool { return true },
 	})
 
+	r.RegisterProvider(LookupProvider{
+		Key:                "esv",
+		Label:              "ESV (api.esv.org)",
+		DefaultTranslation: "esv",
+		Factory: func(cfg *Config) lookup.BibleLookup {
+			return lookup.NewESVClient()
+		},
+		Available: lookup.ESVKeyAvailable,
+	})
+
 	// -- Config fields --
 	r.Register(FieldDef{
 		Key: "bible_text_api", Label: "Bible API", Group: "API",
