@@ -8,6 +8,7 @@ type FormattingOptions struct {
 
 // Config holds the application configuration.
 type Config struct {
+	ConfigVersion       int               `json:"config_version"`
 	DefaultTranslation  string            `json:"default_translation"`
 	ParallelTranslation string            `json:"parallel_translation"`
 	BibleTextAPI        string            `json:"bible_text_api"`
