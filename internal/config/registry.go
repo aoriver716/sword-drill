@@ -240,6 +240,11 @@ func (r *Registry) Load() error {
 		return err
 	}
 
+	// Run any pending schema migrations.
+	if runMigrations(&r.cfg) {
+		_ = r.Save()
+	}
+
 	// Clamp the cache TTL to the API.Bible 30-day maximum. Treat 0 / negative
 	// as "use the default". The clamp is applied to the in-memory copy only;
 	// the on-disk value is reconciled the next time Save runs.
