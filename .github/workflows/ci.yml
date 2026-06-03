@@ -56,8 +56,8 @@ jobs:
 
   build:
     needs: changes
-    if: github.event_name == 'pull_request' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.build == 'true')
+    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.build == 'true'
     uses: ./.github/workflows/build.yml
     with:
-      version: pr-${{ github.event.pull_request.number }}
+      version: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('main-{0}', github.sha) }}
     secrets: inherit
