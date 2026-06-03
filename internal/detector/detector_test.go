@@ -66,6 +66,26 @@ func TestParseReferences(t *testing.T) {
 		{"jOhN 3:16", []ScriptureRef{
 			{Book: "John", StartChapter: 3, StartVerse: 16, EndChapter: 3, EndVerse: 16},
 		}},
+		// Single-chapter books: bare number is a verse, not a chapter
+		{"3 John 14", []ScriptureRef{
+			{Book: "3 John", StartChapter: 1, StartVerse: 14, EndChapter: 1, EndVerse: 14},
+		}},
+		{"Jude 4-6", []ScriptureRef{
+			{Book: "Jude", StartChapter: 1, StartVerse: 4, EndChapter: 1, EndVerse: 6},
+		}},
+		{"Obadiah 1", []ScriptureRef{
+			{Book: "Obadiah", StartChapter: 1, StartVerse: 1, EndChapter: 1, EndVerse: 1},
+		}},
+		{"Philemon 9", []ScriptureRef{
+			{Book: "Philemon", StartChapter: 1, StartVerse: 9, EndChapter: 1, EndVerse: 9},
+		}},
+		{"2 John 7-11", []ScriptureRef{
+			{Book: "2 John", StartChapter: 1, StartVerse: 7, EndChapter: 1, EndVerse: 11},
+		}},
+		// Single-chapter book with explicit chapter:verse still works
+		{"3 John 1:14", []ScriptureRef{
+			{Book: "3 John", StartChapter: 1, StartVerse: 14, EndChapter: 1, EndVerse: 14},
+		}},
 	}
 
 	for _, tt := range tests {

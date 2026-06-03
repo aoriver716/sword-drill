@@ -192,6 +192,21 @@ func TestFormatESVQuery(t *testing.T) {
 			ref:  detector.ScriptureRef{Book: "Romans", StartChapter: 8, EndChapter: 9, StartVerse: 38, EndVerse: 1},
 			want: "Romans 8:38-9:1",
 		},
+		{
+			name: "single-chapter book verse",
+			ref:  detector.ScriptureRef{Book: "3 John", StartChapter: 1, EndChapter: 1, StartVerse: 14, EndVerse: 14},
+			want: "3 John 14",
+		},
+		{
+			name: "single-chapter book range",
+			ref:  detector.ScriptureRef{Book: "Jude", StartChapter: 1, EndChapter: 1, StartVerse: 4, EndVerse: 6},
+			want: "Jude 4-6",
+		},
+		{
+			name: "single-chapter book whole chapter",
+			ref:  detector.ScriptureRef{Book: "Philemon", StartChapter: 1, EndChapter: 1, StartVerse: 0, EndVerse: 0},
+			want: "Philemon",
+		},
 	}
 
 	for _, tt := range tests {
