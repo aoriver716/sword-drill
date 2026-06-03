@@ -157,11 +157,17 @@ function createControl(field) {
             const currentValue = field.key in pendingChanges ? pendingChanges[field.key] : field.value;
             if (field.options) {
                 for (const opt of field.options) {
-                    const option = document.createElement("option");
-                    option.value = opt.value;
-                    option.textContent = opt.label;
-                    if (opt.value === currentValue) option.selected = true;
-                    select.appendChild(option);
+                    if (opt.isGroup) {
+                        const optgroup = document.createElement("optgroup");
+                        optgroup.label = opt.label;
+                        select.appendChild(optgroup);
+                    } else {
+                        const option = document.createElement("option");
+                        option.value = opt.value;
+                        option.textContent = opt.label;
+                        if (opt.value === currentValue) option.selected = true;
+                        select.appendChild(option);
+                    }
                 }
             }
             if (!field.options || field.options.length === 0) {

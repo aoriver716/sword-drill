@@ -38,7 +38,7 @@ func RegisterFields(r *Registry) {
 		Factory: func(cfg *Config) lookup.BibleLookup {
 			return lookup.NewBibleAPIClient()
 		},
-		Available: func() bool { return true },
+		Available: func() bool { return false }, // disabled; kept for future use
 	})
 
 	r.RegisterProvider(LookupProvider{
@@ -55,6 +55,7 @@ func RegisterFields(r *Registry) {
 	r.Register(FieldDef{
 		Key: "bible_text_api", Label: "Bible API", Group: "API",
 		Widget: WidgetSelect, Default: "api.bible",
+		Hidden: true, // hidden from UI; translations now span all providers
 		RequiresRestart: func(*Registry) bool { return true },
 		Getter:          func(c *Config) any { return c.BibleTextAPI },
 		Setter:          func(c *Config, v any) { c.BibleTextAPI, _ = v.(string) },
@@ -62,23 +63,20 @@ func RegisterFields(r *Registry) {
 
 	r.Register(FieldDef{
 		Key: "default_translation", Label: "Default Translation", Group: "API",
-		Widget: WidgetSelect, Default: "de4e12af7f28f599-02",
-		RequiresRestart: func(reg *Registry) bool {
-			_, apiPending := reg.Pending("bible_text_api")
-			return apiPending
-		},
+		Widget: WidgetSelect, Default: "api.bible/de4e12af7f28f599-02",
 		OptionsFunc: func() []Option {
-			bible := r.PendingBibleLookup()
-			if bible == nil {
-				return nil
-			}
-			translations, err := bible.Translations()
+			multi := r.MultiLookup()
+			translations, err := multi.Translations()
 			if err != nil {
 				return nil
 			}
-			opts := make([]Option, len(translations))
-			for i, t := range translations {
-				opts[i] = Option{Label: t.Name, Value: t.Key}
+			opts := make([]Option, 0, len(translations))
+			for _, t := range translations {
+				opts = append(opts, Option{
+					Label:   t.Name,
+					Value:   t.Key,
+					IsGroup: t.IsGroup,
+				})
 			}
 			return opts
 		},
@@ -88,23 +86,20 @@ func RegisterFields(r *Registry) {
 
 	r.Register(FieldDef{
 		Key: "parallel_translation", Label: "Preferred Parallel Translation", Group: "API",
-		Widget: WidgetSelect, Default: "de4e12af7f28f599-02",
-		RequiresRestart: func(reg *Registry) bool {
-			_, apiPending := reg.Pending("bible_text_api")
-			return apiPending
-		},
+		Widget: WidgetSelect, Default: "esv/esv",
 		OptionsFunc: func() []Option {
-			bible := r.PendingBibleLookup()
-			if bible == nil {
-				return nil
-			}
-			translations, err := bible.Translations()
+			multi := r.MultiLookup()
+			translations, err := multi.Translations()
 			if err != nil {
 				return nil
 			}
-			opts := make([]Option, len(translations))
-			for i, t := range translations {
-				opts[i] = Option{Label: t.Name, Value: t.Key}
+			opts := make([]Option, 0, len(translations))
+			for _, t := range translations {
+				opts = append(opts, Option{
+					Label:   t.Name,
+					Value:   t.Key,
+					IsGroup: t.IsGroup,
+				})
 			}
 			return opts
 		},

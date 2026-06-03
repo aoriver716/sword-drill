@@ -23,8 +23,9 @@ type LookupResult struct {
 
 // Translation represents an available Bible translation.
 type Translation struct {
-	Name string // display name shown to the user
-	Key  string // key used when querying the API
+	Name    string // display name shown to the user
+	Key     string // key used when querying the API (empty for group headers)
+	IsGroup bool   // true for non-selectable group header entries
 }
 
 // BibleLookup is the interface for retrieving scripture text.

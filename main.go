@@ -42,7 +42,7 @@ func initConfig() {
 
 	initCache()
 
-	bible = registry.BibleLookup()
+	bible = registry.MultiLookup()
 }
 
 // initCache opens the persistent scripture cache and attaches it to the

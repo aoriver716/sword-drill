@@ -33,8 +33,9 @@ const (
 
 // Option represents a selectable value for select/radio widgets.
 type Option struct {
-	Label string `json:"label"`
-	Value string `json:"value"`
+	Label   string `json:"label"`
+	Value   string `json:"value"`
+	IsGroup bool   `json:"isGroup,omitempty"` // non-selectable group header
 }
 
 // FieldSchema describes a single config field for the preferences UI.
@@ -61,12 +62,13 @@ type FieldDef struct {
 	Group           string
 	Widget          WidgetType
 	Default         any
+	Hidden          bool        // if true, field is not shown in the UI
 	Options         []Option    // static options (nil if dynamic)
 	OptionsFunc     OptionsFunc // called at schema time if non-nil
 	RequiresRestart func(*Registry) bool // evaluated at runtime; nil means false
 	Getter          func(*Config) any
 	Setter          func(*Config, any)
-	Action          func() error // invoked for WidgetButton fields
+	Action          func() error // optional action callback (for button widgets)
 }
 
 // requiresRestart returns whether this field currently requires a restart.
@@ -174,6 +176,21 @@ func (r *Registry) PendingBibleLookup() lookup.BibleLookup {
 		}
 	}
 	return nil
+}
+
+// MultiLookup returns a MultiClient that aggregates all available providers.
+// Translation keys returned are prefixed with "providerKey/" so the correct
+// provider is dispatched at lookup time.
+func (r *Registry) MultiLookup() *lookup.MultiClient {
+	m := lookup.NewMultiClient()
+	for _, p := range r.providers {
+		if !p.Available() {
+			continue
+		}
+		client := lookup.WithCache(p.Factory(&r.cfg), r.cache, p.Key)
+		m.AddProvider(p.Key, p.Label, client)
+	}
+	return m
 }
 
 // providerOptions returns Option entries for all available providers.
@@ -290,8 +307,11 @@ func (r *Registry) Config() *Config {
 // Schema returns all field schemas with current values and resolved options.
 // For RequiresRestart fields, the value shown is the pending value if one exists.
 func (r *Registry) Schema() []FieldSchema {
-	schemas := make([]FieldSchema, len(r.fields))
-	for i, f := range r.fields {
+	var schemas []FieldSchema
+	for _, f := range r.fields {
+		if f.Hidden {
+			continue
+		}
 		opts := f.Options
 		if f.OptionsFunc != nil {
 			opts = f.OptionsFunc()
@@ -307,7 +327,7 @@ func (r *Registry) Schema() []FieldSchema {
 				value = v
 			}
 		}
-		schemas[i] = FieldSchema{
+		schemas = append(schemas, FieldSchema{
 			Key:             f.Key,
 			Label:           f.Label,
 			Description:     f.Description,
@@ -317,7 +337,7 @@ func (r *Registry) Schema() []FieldSchema {
 			Default:         f.Default,
 			Options:         opts,
 			RequiresRestart: f.requiresRestart(r),
-		}
+		})
 	}
 	return schemas
 }
