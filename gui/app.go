@@ -102,21 +102,14 @@ func (a *App) ResetConfigToDefaults() error {
 	return a.registry.ResetToDefaults()
 }
 
-// RefreshTranslations invalidates any cached translation list so the next
-// call refetches from the current provider. No-op when the cache is not
-// attached.
+// RefreshTranslations invalidates any cached translation lists so the next
+// call refetches from all providers.
 func (a *App) RefreshTranslations() error {
 	if a.registry == nil {
 		return nil
 	}
-	bible := a.registry.BibleLookup()
-	if bible == nil {
-		return nil
-	}
-	if r, ok := bible.(interface{ RefreshTranslations() error }); ok {
-		return r.RefreshTranslations()
-	}
-	return nil
+	multi := a.registry.MultiLookup()
+	return multi.RefreshTranslations()
 }
 
 // InvokeFieldAction triggers the Action callback associated with a config
@@ -288,22 +281,23 @@ func (a *App) LoadChapter(book string, chapter int, translation string) ([]Chapt
 	return a.chapterLookup(book, chapter, translation)
 }
 
-// GetTranslations returns the available translations for the current Bible API.
+// GetTranslations returns the available translations from all Bible APIs.
 func (a *App) GetTranslations() []config.Option {
 	if a.registry == nil {
 		return nil
 	}
-	bible := a.registry.BibleLookup()
-	if bible == nil {
-		return nil
-	}
-	translations, err := bible.Translations()
+	multi := a.registry.MultiLookup()
+	translations, err := multi.Translations()
 	if err != nil {
 		return nil
 	}
-	opts := make([]config.Option, len(translations))
-	for i, t := range translations {
-		opts[i] = config.Option{Label: t.Name, Value: t.Key}
+	opts := make([]config.Option, 0, len(translations))
+	for _, t := range translations {
+		opts = append(opts, config.Option{
+			Label:   t.Name,
+			Value:   t.Key,
+			IsGroup: t.IsGroup,
+		})
 	}
 	return opts
 }

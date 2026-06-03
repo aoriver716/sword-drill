@@ -15,10 +15,16 @@ parallelSelect.style.display = "none";
 function populateSelect(select) {
     select.innerHTML = "";
     for (const t of translationOptions) {
-        const opt = document.createElement("option");
-        opt.value = t.value;
-        opt.textContent = t.label;
-        select.appendChild(opt);
+        if (t.isGroup) {
+            const optgroup = document.createElement("optgroup");
+            optgroup.label = t.label;
+            select.appendChild(optgroup);
+        } else {
+            const opt = document.createElement("option");
+            opt.value = t.value;
+            opt.textContent = t.label;
+            select.appendChild(opt);
+        }
     }
 }
 
