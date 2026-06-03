@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/aoriver716/sword-drill/internal/cache"
@@ -240,6 +241,13 @@ func (r *Registry) Load() error {
 		return err
 	}
 
+	// Migrate legacy translation keys: old configs stored bare translation
+	// keys (e.g. "de4e12af7f28f599-02") without a provider prefix. The new
+	// multi-provider system expects "provider/key" format.
+	if migrated := r.migrateTranslationKeys(); migrated {
+		_ = r.Save()
+	}
+
 	// Clamp the cache TTL to the API.Bible 30-day maximum. Treat 0 / negative
 	// as "use the default". The clamp is applied to the in-memory copy only;
 	// the on-disk value is reconciled the next time Save runs.
@@ -425,4 +433,25 @@ func (r *Registry) clampCacheTTL() {
 	if r.cfg.CacheTTLDays <= 0 || r.cfg.CacheTTLDays > maxDays {
 		r.cfg.CacheTTLDays = maxDays
 	}
+}
+
+// migrateTranslationKeys detects old-style unprefixed translation keys and
+// prefixes them with the configured bible_text_api provider. Returns true if
+// any migration occurred.
+func (r *Registry) migrateTranslationKeys() bool {
+	migrated := false
+	provider := r.cfg.BibleTextAPI
+	if provider == "" {
+		provider = "api.bible" // historical default
+	}
+
+	if r.cfg.DefaultTranslation != "" && !strings.Contains(r.cfg.DefaultTranslation, "/") {
+		r.cfg.DefaultTranslation = provider + "/" + r.cfg.DefaultTranslation
+		migrated = true
+	}
+	if r.cfg.ParallelTranslation != "" && !strings.Contains(r.cfg.ParallelTranslation, "/") {
+		r.cfg.ParallelTranslation = provider + "/" + r.cfg.ParallelTranslation
+		migrated = true
+	}
+	return migrated
 }
