@@ -17,6 +17,15 @@
     cursor: pointer;
 }
 
+.update-banner .update-banner-skip {
+    font-size: 0.85em;
+    opacity: 0.75;
+}
+
+.update-banner .update-banner-skip:hover {
+    opacity: 1;
+}
+
 .update-banner button {
     margin-left: auto;
     background: none;

@@ -168,4 +168,11 @@ func RegisterFields(r *Registry) {
 			return c.Clear()
 		},
 	})
+
+	r.Register(FieldDef{
+		Key:    "skipped_version",
+		Hidden: true,
+		Getter: func(c *Config) any { return c.SkippedVersion },
+		Setter: func(c *Config, v any) { c.SkippedVersion, _ = v.(string) },
+	})
 }
