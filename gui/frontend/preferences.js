@@ -232,15 +232,15 @@ function createControl(field) {
                 btn.disabled = true;
                 status.textContent = "";
                 try {
-                    await window.go.gui.App.InvokeFieldAction(field.key);
-                    status.textContent = "✓ Done";
+                    const msg = await window.go.gui.App.InvokeFieldAction(field.key);
+                    status.textContent = "✓ " + (msg || "Done");
                     status.classList.add("success");
                     setTimeout(() => {
                         status.textContent = "";
                         status.classList.remove("success");
                     }, 3000);
                 } catch (e) {
-                    status.textContent = "✗ Failed";
+                    status.textContent = "✗ " + (e.message || "Failed");
                     status.classList.add("error");
                     setTimeout(() => {
                         status.textContent = "";

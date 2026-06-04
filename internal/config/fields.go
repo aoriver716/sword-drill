@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/aoriver716/sword-drill/internal/lookup"
@@ -160,12 +161,19 @@ func RegisterFields(r *Registry) {
 		Key: "clear_scripture_cache", Label: "Clear Scripture Cache", Group: "General",
 		Description: "Delete all cached scripture lookups. Next requests will hit the API.",
 		Widget:      WidgetButton,
-		Action: func() error {
+		Action: func() (string, error) {
 			c := r.Cache()
 			if c == nil {
-				return nil
+				return "No cache configured", nil
 			}
-			return c.Clear()
+			stats, _ := c.Stats()
+			if err := c.Clear(); err != nil {
+				return "", err
+			}
+			if stats.Entries == 0 {
+				return "Cache already empty", nil
+			}
+			return fmt.Sprintf("Cleared %d entries", stats.Entries), nil
 		},
 	})
 }
