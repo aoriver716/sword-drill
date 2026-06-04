@@ -224,15 +224,38 @@ function createControl(field) {
             btn.className = "prefs-button";
             btn.type = "button";
             btn.textContent = field.label;
+
+            const status = document.createElement("span");
+            status.className = "prefs-button-status";
+
             btn.addEventListener("click", async () => {
                 btn.disabled = true;
+                status.textContent = "";
                 try {
                     await window.go.gui.App.InvokeFieldAction(field.key);
+                    status.textContent = "✓ Done";
+                    status.classList.add("success");
+                    setTimeout(() => {
+                        status.textContent = "";
+                        status.classList.remove("success");
+                    }, 3000);
+                } catch (e) {
+                    status.textContent = "✗ Failed";
+                    status.classList.add("error");
+                    setTimeout(() => {
+                        status.textContent = "";
+                        status.classList.remove("error");
+                    }, 3000);
                 } finally {
                     btn.disabled = false;
                 }
             });
-            return btn;
+
+            const wrapper = document.createElement("span");
+            wrapper.className = "prefs-button-wrapper";
+            wrapper.appendChild(btn);
+            wrapper.appendChild(status);
+            return wrapper;
         }
         default:
             return null;
