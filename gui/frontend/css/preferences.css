@@ -1,6 +1,7 @@
 .prefs-dialog {
     width: 420px;
     max-height: 80vh;
+    user-select: none;
 }
 
 .prefs-header {
@@ -162,6 +163,25 @@
 .prefs-button:disabled {
     opacity: 0.6;
     cursor: progress;
+}
+
+.prefs-button-status {
+    font-size: var(--font-size-sm);
+    text-align: right;
+    padding: 2px 0 4px;
+    min-height: 1.2em;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.prefs-button-status.success {
+    color: #2e7d32;
+    opacity: 1;
+}
+
+.prefs-button-status.error {
+    color: #c62828;
+    opacity: 1;
 }
 
 .prefs-footer {

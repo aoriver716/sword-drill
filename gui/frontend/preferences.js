@@ -129,6 +129,11 @@ async function renderPreferences() {
             if (control) fieldDiv.appendChild(control);
 
             groupDiv.appendChild(fieldDiv);
+
+            // Append status element below the field for button widgets
+            if (control && control._statusElement) {
+                groupDiv.appendChild(control._statusElement);
+            }
         }
 
         prefsBody.appendChild(groupDiv);
@@ -224,14 +229,34 @@ function createControl(field) {
             btn.className = "prefs-button";
             btn.type = "button";
             btn.textContent = field.label;
+
+            const status = document.createElement("div");
+            status.className = "prefs-button-status";
+
             btn.addEventListener("click", async () => {
                 btn.disabled = true;
+                status.textContent = "";
                 try {
-                    await window.go.gui.App.InvokeFieldAction(field.key);
+                    const msg = await window.go.gui.App.InvokeFieldAction(field.key);
+                    status.textContent = "✓ " + (msg || "Done");
+                    status.classList.add("success");
+                    setTimeout(() => {
+                        status.textContent = "";
+                        status.classList.remove("success");
+                    }, 3000);
+                } catch (e) {
+                    status.textContent = "✗ " + (e.message || "Failed");
+                    status.classList.add("error");
+                    setTimeout(() => {
+                        status.textContent = "";
+                        status.classList.remove("error");
+                    }, 3000);
                 } finally {
                     btn.disabled = false;
                 }
             });
+
+            btn._statusElement = status;
             return btn;
         }
         default:

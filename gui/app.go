@@ -114,9 +114,10 @@ func (a *App) RefreshTranslations() error {
 
 // InvokeFieldAction triggers the Action callback associated with a config
 // field (used by button-type widgets such as "Clear Scripture Cache").
-func (a *App) InvokeFieldAction(key string) error {
+// Returns a status message on success.
+func (a *App) InvokeFieldAction(key string) (string, error) {
 	if a.registry == nil {
-		return nil
+		return "", nil
 	}
 	return a.registry.InvokeAction(key)
 }

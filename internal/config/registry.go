@@ -68,7 +68,7 @@ type FieldDef struct {
 	RequiresRestart func(*Registry) bool // evaluated at runtime; nil means false
 	Getter          func(*Config) any
 	Setter          func(*Config, any)
-	Action          func() error // optional action callback (for button widgets)
+	Action          func() (string, error) // optional action callback (for button widgets); returns status message
 }
 
 // requiresRestart returns whether this field currently requires a restart.
@@ -125,18 +125,19 @@ func (r *Registry) Cache() *cache.Cache {
 }
 
 // InvokeAction looks up a field by key and calls its Action callback.
-// Returns an error if the field is missing or has no Action.
-func (r *Registry) InvokeAction(key string) error {
+// Returns a status message on success, or an error if the field is missing,
+// has no Action, or the action itself fails.
+func (r *Registry) InvokeAction(key string) (string, error) {
 	for _, f := range r.fields {
 		if f.Key != key {
 			continue
 		}
 		if f.Action == nil {
-			return fmt.Errorf("config: field %q has no action", key)
+			return "", fmt.Errorf("config: field %q has no action", key)
 		}
 		return f.Action()
 	}
-	return fmt.Errorf("config: unknown field %q", key)
+	return "", fmt.Errorf("config: unknown field %q", key)
 }
 
 // BibleLookup returns the BibleLookup client for the currently configured API.
