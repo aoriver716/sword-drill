@@ -17,4 +17,5 @@ type Config struct {
 	CheckForUpdates     bool              `json:"check_for_updates"`
 	UpdateChannel       string            `json:"update_channel"`
 	CacheTTLDays        int               `json:"cache_ttl_days"`
+	SkippedVersion      string            `json:"skipped_version,omitempty"`
 }

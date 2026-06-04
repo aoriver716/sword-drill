@@ -97,11 +97,15 @@ window.addEventListener("DOMContentLoaded", () => {
 // shows (or replaces) the top-of-window banner. Exported so the Preferences
 // dialog can re-trigger a check after the user applies new settings.
 export function checkAndShowBanner() {
-    return window.go.gui.App.CheckForUpdates().then((info) => {
+    return window.go.gui.App.CheckForUpdates().then(async (info) => {
         if (info.error) return info;
         const existing = document.querySelector(".update-banner");
         if (existing) existing.remove();
         if (info.available) {
+            const skipped = await window.go.gui.App.GetSkippedVersion();
+            if (skipped && skipped === info.latest) {
+                return info;
+            }
             showUpdateBanner(info);
         }
         return info;
@@ -113,8 +117,9 @@ function showUpdateBanner(info) {
     banner.className = "update-banner";
     const verb = info.isDowngrade ? "Downgrade to the stable version" : "Update available";
     const linkText = info.downloadURL ? "Download" : "View release";
-    banner.innerHTML = `${verb}: ${info.latest}
+    banner.innerHTML = `${verb}: <strong>${info.latest}</strong>
         <a href="#" id="update-banner-link">${linkText}</a>
+        <a href="#" id="update-banner-skip" class="update-banner-skip">Skip this version</a>
         <button id="update-banner-dismiss">&times;</button>`;
     document.getElementById("app").prepend(banner);
 
@@ -125,6 +130,12 @@ function showUpdateBanner(info) {
         } else {
             window.runtime.BrowserOpenURL(info.releaseURL);
         }
+    });
+
+    document.getElementById("update-banner-skip").addEventListener("click", (e) => {
+        e.preventDefault();
+        window.go.gui.App.SkipUpdate(info.latest);
+        banner.remove();
     });
 
     document.getElementById("update-banner-dismiss").addEventListener("click", () => {

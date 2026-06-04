@@ -429,3 +429,19 @@ func (a *App) ShouldCheckForUpdates() bool {
 	}
 	return a.registry.Config().CheckForUpdates
 }
+
+// SkipUpdate records a version to skip so the update banner won't show for it.
+func (a *App) SkipUpdate(version string) error {
+	if a.registry == nil {
+		return nil
+	}
+	return a.registry.Update("skipped_version", version)
+}
+
+// GetSkippedVersion returns the version the user chose to skip, or empty string.
+func (a *App) GetSkippedVersion() string {
+	if a.registry == nil {
+		return ""
+	}
+	return a.registry.Config().SkippedVersion
+}
