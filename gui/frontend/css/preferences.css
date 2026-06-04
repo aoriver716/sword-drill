@@ -1,6 +1,7 @@
 .prefs-dialog {
     width: 420px;
     max-height: 80vh;
+    user-select: none;
 }
 
 .prefs-header {
@@ -164,14 +165,11 @@
     cursor: progress;
 }
 
-.prefs-button-wrapper {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
 .prefs-button-status {
     font-size: var(--font-size-sm);
+    text-align: right;
+    padding: 2px 0 4px;
+    min-height: 1.2em;
     opacity: 0;
     transition: opacity 0.2s ease;
 }

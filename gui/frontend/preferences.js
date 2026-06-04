@@ -129,6 +129,11 @@ async function renderPreferences() {
             if (control) fieldDiv.appendChild(control);
 
             groupDiv.appendChild(fieldDiv);
+
+            // Append status element below the field for button widgets
+            if (control && control._statusElement) {
+                groupDiv.appendChild(control._statusElement);
+            }
         }
 
         prefsBody.appendChild(groupDiv);
@@ -225,7 +230,7 @@ function createControl(field) {
             btn.type = "button";
             btn.textContent = field.label;
 
-            const status = document.createElement("span");
+            const status = document.createElement("div");
             status.className = "prefs-button-status";
 
             btn.addEventListener("click", async () => {
@@ -251,11 +256,8 @@ function createControl(field) {
                 }
             });
 
-            const wrapper = document.createElement("span");
-            wrapper.className = "prefs-button-wrapper";
-            wrapper.appendChild(btn);
-            wrapper.appendChild(status);
-            return wrapper;
+            btn._statusElement = status;
+            return btn;
         }
         default:
             return null;
