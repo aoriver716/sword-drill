@@ -87,6 +87,31 @@ func TestESVClient(t *testing.T) {
 		t.Logf("Got %d verses", len(result.Verses))
 	})
 
+	t.Run("3 John 14 single-chapter book", func(t *testing.T) {
+		ref := detector.ScriptureRef{
+			Book:         "3 John",
+			StartChapter: 1,
+			StartVerse:   14,
+			EndChapter:   1,
+			EndVerse:     14,
+		}
+		result, err := client.Lookup(ref, "esv")
+		if err != nil {
+			t.Fatalf("Lookup failed: %v", err)
+		}
+		if len(result.Verses) == 0 {
+			t.Fatal("Expected at least 1 verse, got 0")
+		}
+		v := result.Verses[0]
+		if v.Chapter != 1 || v.Number != 14 {
+			t.Errorf("Expected chapter 1 verse 14, got chapter %d verse %d", v.Chapter, v.Number)
+		}
+		if v.Text == "" {
+			t.Error("Verse text is empty")
+		}
+		t.Logf("Text: %q", v.Text)
+	})
+
 	t.Run("Translations", func(t *testing.T) {
 		translations, err := client.Translations()
 		if err != nil {
