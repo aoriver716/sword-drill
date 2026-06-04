@@ -87,6 +87,31 @@ func TestESVClient(t *testing.T) {
 		t.Logf("Got %d verses", len(result.Verses))
 	})
 
+	t.Run("3 John 14 single-chapter book", func(t *testing.T) {
+		ref := detector.ScriptureRef{
+			Book:         "3 John",
+			StartChapter: 1,
+			StartVerse:   14,
+			EndChapter:   1,
+			EndVerse:     14,
+		}
+		result, err := client.Lookup(ref, "esv")
+		if err != nil {
+			t.Fatalf("Lookup failed: %v", err)
+		}
+		if len(result.Verses) == 0 {
+			t.Fatal("Expected at least 1 verse, got 0")
+		}
+		v := result.Verses[0]
+		if v.Chapter != 1 || v.Number != 14 {
+			t.Errorf("Expected chapter 1 verse 14, got chapter %d verse %d", v.Chapter, v.Number)
+		}
+		if v.Text == "" {
+			t.Error("Verse text is empty")
+		}
+		t.Logf("Text: %q", v.Text)
+	})
+
 	t.Run("Translations", func(t *testing.T) {
 		translations, err := client.Translations()
 		if err != nil {
@@ -191,6 +216,21 @@ func TestFormatESVQuery(t *testing.T) {
 			name: "cross-chapter",
 			ref:  detector.ScriptureRef{Book: "Romans", StartChapter: 8, EndChapter: 9, StartVerse: 38, EndVerse: 1},
 			want: "Romans 8:38-9:1",
+		},
+		{
+			name: "single-chapter book verse",
+			ref:  detector.ScriptureRef{Book: "3 John", StartChapter: 1, EndChapter: 1, StartVerse: 14, EndVerse: 14},
+			want: "3 John 14",
+		},
+		{
+			name: "single-chapter book range",
+			ref:  detector.ScriptureRef{Book: "Jude", StartChapter: 1, EndChapter: 1, StartVerse: 4, EndVerse: 6},
+			want: "Jude 4-6",
+		},
+		{
+			name: "single-chapter book whole chapter",
+			ref:  detector.ScriptureRef{Book: "Philemon", StartChapter: 1, EndChapter: 1, StartVerse: 0, EndVerse: 0},
+			want: "Philemon",
 		},
 	}
 

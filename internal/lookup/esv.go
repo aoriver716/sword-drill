@@ -163,15 +163,26 @@ func parseESVVerses(passage string, ref detector.ScriptureRef) []Verse {
 func formatESVQuery(ref detector.ScriptureRef) string {
 	var b strings.Builder
 	b.WriteString(ref.Book)
-	b.WriteString(fmt.Sprintf(" %d", ref.StartChapter))
 
-	if ref.StartVerse > 0 {
-		b.WriteString(fmt.Sprintf(":%d", ref.StartVerse))
+	if detector.IsSingleChapterBook(ref.Book) {
+		// ESV requires "3 John 14" not "3 John 1:14"
+		if ref.StartVerse > 0 {
+			b.WriteString(fmt.Sprintf(" %d", ref.StartVerse))
+			if ref.EndVerse > 0 && ref.EndVerse != ref.StartVerse {
+				b.WriteString(fmt.Sprintf("-%d", ref.EndVerse))
+			}
+		}
+	} else {
+		b.WriteString(fmt.Sprintf(" %d", ref.StartChapter))
 
-		if ref.EndChapter != ref.StartChapter {
-			b.WriteString(fmt.Sprintf("-%d:%d", ref.EndChapter, ref.EndVerse))
-		} else if ref.EndVerse > 0 && ref.EndVerse != ref.StartVerse {
-			b.WriteString(fmt.Sprintf("-%d", ref.EndVerse))
+		if ref.StartVerse > 0 {
+			b.WriteString(fmt.Sprintf(":%d", ref.StartVerse))
+
+			if ref.EndChapter != ref.StartChapter {
+				b.WriteString(fmt.Sprintf("-%d:%d", ref.EndChapter, ref.EndVerse))
+			} else if ref.EndVerse > 0 && ref.EndVerse != ref.StartVerse {
+				b.WriteString(fmt.Sprintf("-%d", ref.EndVerse))
+			}
 		}
 	}
 	return b.String()

@@ -140,8 +140,29 @@ func buildPattern() *regexp.Regexp {
 	}
 
 	bookGroup := strings.Join(escaped, "|")
-	pattern := `(?i)\b(` + bookGroup + `)\s+(\d+)(?::(\d+)(?:\s*[-–—]\s*(\d+)(?::(\d+))?)?)?(?:\b|$)`
+	// Pattern groups:
+	//   1: book name
+	//   2: first number (chapter, or verse for single-chapter books)
+	//   3: verse after colon (optional)
+	//   4: range end number (after dash following colon group)
+	//   5: cross-chapter end verse
+	//   6: range end number (after dash with NO colon — for "Book V-V" format)
+	pattern := `(?i)\b(` + bookGroup + `)\s+(\d+)(?::(\d+)(?:\s*[-–—]\s*(\d+)(?::(\d+))?)?|\s*[-–—]\s*(\d+))?(?:\b|$)`
 	return regexp.MustCompile(pattern)
+}
+
+// singleChapterBooks is the set of canonical book names that have only one chapter.
+var singleChapterBooks = map[string]bool{
+	"Obadiah":  true,
+	"Philemon": true,
+	"2 John":   true,
+	"3 John":   true,
+	"Jude":     true,
+}
+
+// IsSingleChapterBook returns true if the canonical book name has only one chapter.
+func IsSingleChapterBook(book string) bool {
+	return singleChapterBooks[book]
 }
 
 // ParseReferences finds all scripture references in the given text.
@@ -160,11 +181,21 @@ func ParseReferences(text string) []ScriptureRef {
 		startVerse := atoi(m[3])
 		num4 := atoi(m[4])
 		num5 := atoi(m[5])
+		num6 := atoi(m[6]) // range end for "Book V-V" format (no colon)
 
 		ref := ScriptureRef{
 			Book:         canonical,
 			StartChapter: startChapter,
 			StartVerse:   startVerse,
+		}
+
+		// For single-chapter books, a bare number like "3 John 14" means
+		// verse 14 of chapter 1, not chapter 14.
+		if singleChapterBooks[canonical] && startVerse == 0 {
+			ref.StartVerse = startChapter
+			ref.StartChapter = 1
+			startVerse = ref.StartVerse
+			startChapter = 1
 		}
 
 		if num5 != 0 {
@@ -173,6 +204,10 @@ func ParseReferences(text string) []ScriptureRef {
 		} else if num4 != 0 {
 			ref.EndChapter = startChapter
 			ref.EndVerse = num4
+		} else if num6 != 0 {
+			// "Book V-V" range (no colon), used by single-chapter books
+			ref.EndChapter = startChapter
+			ref.EndVerse = num6
 		} else {
 			ref.EndChapter = startChapter
 			ref.EndVerse = startVerse
