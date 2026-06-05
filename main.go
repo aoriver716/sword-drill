@@ -182,6 +182,10 @@ func buildAppMenu(app *gui.App) *menu.Menu {
 	})
 
 	helpMenu := appMenu.AddSubmenu("Help")
+	helpMenu.AddText("Report a Problem…", nil, func(_ *menu.CallbackData) {
+		wailsRuntime.EventsEmit(app.Ctx(), "menu:report-problem")
+	})
+	helpMenu.AddSeparator()
 	helpMenu.AddText("About Sword Drill", nil, func(_ *menu.CallbackData) {
 		wailsRuntime.EventsEmit(app.Ctx(), "menu:about")
 	})

@@ -15,6 +15,11 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+// supportEmail is the contact email for bug reports, set at compile time via:
+//
+//	-ldflags "-X github.com/aoriver716/sword-drill/gui.supportEmail=user@example.com"
+var supportEmail string
+
 // Compile-time check that App implements ScriptureDisplay.
 var _ ScriptureDisplay = (*App)(nil)
 
@@ -444,4 +449,9 @@ func (a *App) GetSkippedVersion() string {
 		return ""
 	}
 	return a.registry.Config().SkippedVersion
+}
+
+// GetSupportEmail returns the compiled-in support email address, or empty string.
+func (a *App) GetSupportEmail() string {
+	return supportEmail
 }
