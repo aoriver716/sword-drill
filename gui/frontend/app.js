@@ -5,6 +5,7 @@ import { saveAndQuit, reopenClosedTab, newTab } from "./persistence.js";
 import { closeTab } from "./tabs.js";
 import { openPreferences } from "./preferences.js";
 import { openAbout } from "./about.js";
+import { openReportProblem } from "./report.js";
 
 // Side-effect imports: these modules self-register their event listeners on import.
 import "./toolbar.js";
@@ -25,6 +26,7 @@ window.runtime.EventsOn("menu:new-tab", () => { newTab(); });
 window.runtime.EventsOn("menu:preferences", () => { openPreferences(); });
 window.runtime.EventsOn("menu:quit", () => { saveAndQuit(); });
 window.runtime.EventsOn("menu:about", () => { openAbout(); });
+window.runtime.EventsOn("menu:report-problem", () => { openReportProblem(); });
 
 // Keyboard shortcuts (for actions not in the native menu)
 register("w", () => { if (getActiveTab() != null) closeTab(getActiveTab()); });

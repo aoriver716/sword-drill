@@ -1,6 +1,7 @@
-/* Shared dialog base (preferences + about) */
+/* Shared dialog base (preferences + about + report) */
 .prefs-dialog,
-.about-dialog {
+.about-dialog,
+.report-dialog {
     display: none;
     position: fixed;
     top: 50%;
@@ -16,7 +17,8 @@
 }
 
 .prefs-dialog.dialog-open,
-.about-dialog.dialog-open {
+.about-dialog.dialog-open,
+.report-dialog.dialog-open {
     display: flex;
 }
 

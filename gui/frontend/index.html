@@ -102,6 +102,32 @@
             </div>
         </div>
         <div id="about-backdrop" class="dialog-backdrop"></div>
+
+        <!-- Report a Problem Dialog -->
+        <div id="report-dialog" class="report-dialog">
+            <div class="report-header">
+                <span class="report-title">Report a Problem</span>
+                <button id="report-close" class="prefs-close-btn">&times;</button>
+            </div>
+            <div class="report-body">
+                <p class="report-description">Found a bug or have feedback? Choose how you'd like to report it:</p>
+                <div class="report-options">
+                    <div class="report-option">
+                        <a href="#" id="report-github-link" class="report-link">
+                            <span class="report-link-title">Report on GitHub</span>
+                            <span class="report-link-detail">Requires a GitHub account</span>
+                        </a>
+                    </div>
+                    <div class="report-option">
+                        <a href="#" id="report-email-link" class="report-link">
+                            <span class="report-link-title">Send an Email</span>
+                            <span class="report-link-detail" id="report-email-detail">No account required</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="report-backdrop" class="dialog-backdrop"></div>
     </div>
 
     <script src="wails/ipc.js"></script>
