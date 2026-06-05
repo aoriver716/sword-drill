@@ -182,6 +182,10 @@ func buildAppMenu(app *gui.App) *menu.Menu {
 	})
 
 	helpMenu := appMenu.AddSubmenu("Help")
+	helpMenu.AddText("Report a Bug", nil, func(_ *menu.CallbackData) {
+		wailsRuntime.BrowserOpenURL(app.Ctx(), "https://github.com/aoriver716/sword-drill/issues/new?labels=bug,user-submitted")
+	})
+	helpMenu.AddSeparator()
 	helpMenu.AddText("About Sword Drill", nil, func(_ *menu.CallbackData) {
 		wailsRuntime.EventsEmit(app.Ctx(), "menu:about")
 	})
