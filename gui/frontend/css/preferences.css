@@ -206,6 +206,18 @@
     gap: 8px;
 }
 
+.prefs-reset-status {
+    font-size: var(--font-size-sm);
+    user-select: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.prefs-reset-status.success {
+    color: #2e7d32;
+    opacity: 1;
+}
+
 .prefs-btn {
     font-size: var(--font-size-sm);
     padding: 6px 14px;

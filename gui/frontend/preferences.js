@@ -48,8 +48,14 @@ document.getElementById("prefs-apply").addEventListener("click", async () => {
 document.getElementById("prefs-reset").addEventListener("click", async () => {
     pendingChanges = {};
     await window.go.gui.App.ResetConfigToDefaults();
-    await window.go.gui.App.RefreshTranslations();
     await renderPreferences();
+    const status = document.getElementById("prefs-reset-status");
+    status.textContent = "✓ Defaults restored";
+    status.classList.add("success");
+    setTimeout(() => {
+        status.textContent = "";
+        status.classList.remove("success");
+    }, 3000);
 });
 
 prefsBackdrop.addEventListener("click", () => {
