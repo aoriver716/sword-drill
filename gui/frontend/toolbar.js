@@ -1,7 +1,7 @@
 // toolbar.js — Browser toolbar: book/chapter nav, translation, parallel mode.
 import { BIBLE_BOOKS, BOOK_CHAPTERS } from "./bible-books.js";
 import { tabs, getActiveTab, browserToolbar } from "./state.js";
-import { formatOpts, tabName, renderTab } from "./rendering.js";
+import { formatOpts, tabName, renderTab, highlightVerses } from "./rendering.js";
 import { translationSelect, parallelSelect, populateParallelSelect } from "./translations.js";
 import { setUpdateToolbarState } from "./tabs.js";
 
@@ -180,7 +180,13 @@ async function updateTab(id, changes) {
     tab.state = newState;
     tab.verses = verses;
     tab.parallelVerses = parallelVerses;
+    if (needMainVerses) {
+        tab.highlight = null;
+    }
     renderTab(tab);
+    if (tab.highlight) {
+        highlightVerses(tab.dom.pageBody, tab.highlight);
+    }
     if (getActiveTab() === id) {
         updateToolbarState();
     }

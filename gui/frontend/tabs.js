@@ -100,6 +100,7 @@ export function createTab(state, verses, highlight, parallelVerses) {
         dom: { tabEl, page, pageHeader, pageBody },
         verses,
         parallelVerses: parallelVerses || null,
+        highlight: highlight || null,
     };
     selectTab(tabId);
     highlightVerses(pageBody, highlight);
@@ -170,5 +171,6 @@ window.runtime.EventsOn("browser:focusTab", (data) => {
     const id = findTabByName(data.name);
     if (id == null) return;
     selectTab(id);
+    tabs[id].highlight = data.highlight || null;
     highlightVerses(tabs[id].dom.pageBody, data.highlight);
 });
