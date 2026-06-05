@@ -40,34 +40,55 @@ export function renderParallelVerses(container, mainVerses, parallelVerses) {
     container.innerHTML = "";
     const table = document.createElement("div");
     table.className = "parallel-table";
-    const maxLen = Math.max(mainVerses.length, parallelVerses.length);
-    for (let i = 0; i < maxLen; i++) {
+
+    // Align by verse number rather than array index so that omitted verses
+    // (e.g. Matthew 17:21 in the ESV) don't cause misalignment.
+    const mainMap = new Map(mainVerses.map(v => [v.number, v]));
+    const parallelMap = new Map(parallelVerses.map(v => [v.number, v]));
+    const allNumbers = [...new Set([...mainMap.keys(), ...parallelMap.keys()])]
+        .sort((a, b) => a - b);
+
+    for (const num of allNumbers) {
         const row = document.createElement("div");
         row.className = "parallel-row";
 
         const leftCell = document.createElement("div");
         leftCell.className = "parallel-cell";
-        if (i < mainVerses.length) {
+        const mainVerse = mainMap.get(num);
+        if (mainVerse) {
             const span = document.createElement("span");
             span.className = "verse";
-            span.dataset.verse = mainVerses[i].number;
+            span.dataset.verse = mainVerse.number;
             let text = "";
-            if (formatOpts.showVerseNums) text += mainVerses[i].number + " ";
-            text += mainVerses[i].text;
+            if (formatOpts.showVerseNums) text += mainVerse.number + " ";
+            text += mainVerse.text;
             span.textContent = text;
+            leftCell.appendChild(span);
+        } else {
+            const span = document.createElement("span");
+            span.className = "verse omitted";
+            span.dataset.verse = num;
+            if (formatOpts.showVerseNums) span.textContent = num + " —";
             leftCell.appendChild(span);
         }
 
         const rightCell = document.createElement("div");
         rightCell.className = "parallel-cell";
-        if (i < parallelVerses.length) {
+        const parallelVerse = parallelMap.get(num);
+        if (parallelVerse) {
             const span = document.createElement("span");
             span.className = "verse";
-            span.dataset.verse = parallelVerses[i].number;
+            span.dataset.verse = parallelVerse.number;
             let text = "";
-            if (formatOpts.showVerseNums) text += parallelVerses[i].number + " ";
-            text += parallelVerses[i].text;
+            if (formatOpts.showVerseNums) text += parallelVerse.number + " ";
+            text += parallelVerse.text;
             span.textContent = text;
+            rightCell.appendChild(span);
+        } else {
+            const span = document.createElement("span");
+            span.className = "verse omitted";
+            span.dataset.verse = num;
+            if (formatOpts.showVerseNums) span.textContent = num + " —";
             rightCell.appendChild(span);
         }
 
@@ -116,5 +137,8 @@ window.runtime.EventsOn("config:formatChanged", (opts) => {
     formatOpts = opts;
     for (const tab of Object.values(tabs)) {
         renderTab(tab);
+        if (tab.highlight) {
+            highlightVerses(tab.dom.pageBody, tab.highlight);
+        }
     }
 });

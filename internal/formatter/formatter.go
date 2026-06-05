@@ -10,6 +10,9 @@ import (
 
 // Format renders a LookupResult as a string according to the given config.
 func Format(result lookup.LookupResult, cfg *config.Config) string {
+	if len(result.Verses) == 0 {
+		return "[Verse not included in " + result.Translation + "]"
+	}
 	var b strings.Builder
 	for i, v := range result.Verses {
 		if cfg.FormattingOptions.VerseByVerse && i > 0 {
