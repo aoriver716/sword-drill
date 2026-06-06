@@ -14,6 +14,7 @@ type MultiClient struct {
 	providers map[string]BibleLookup
 	order     []string // provider keys in registration order
 	labels    map[string]string
+	cached    []Translation // in-memory cache for the current session
 }
 
 // NewMultiClient creates a MultiClient from a set of named providers.
@@ -45,7 +46,11 @@ func (m *MultiClient) Lookup(ref detector.ScriptureRef, translation string) (Loo
 // Translations returns all translations from all providers, with each group
 // prefixed by a header entry. Header entries have an empty Value and a bold
 // label (prefixed with "—") to indicate they are non-selectable group headers.
+// Results are cached in memory for the session lifetime.
 func (m *MultiClient) Translations() ([]Translation, error) {
+	if m.cached != nil {
+		return m.cached, nil
+	}
 	var all []Translation
 	for _, provKey := range m.order {
 		client := m.providers[provKey]
@@ -70,11 +75,14 @@ func (m *MultiClient) Translations() ([]Translation, error) {
 			})
 		}
 	}
+	m.cached = all
 	return all, nil
 }
 
-// RefreshTranslations refreshes all providers' translation lists.
+// RefreshTranslations clears the in-memory cache and refreshes all
+// providers' translation lists.
 func (m *MultiClient) RefreshTranslations() error {
+	m.cached = nil
 	for _, client := range m.providers {
 		if r, ok := client.(interface{ RefreshTranslations() error }); ok {
 			_ = r.RefreshTranslations()
