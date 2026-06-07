@@ -198,7 +198,6 @@ function createControl(field) {
                         restartRequired = true;
                         updateRestartNotice();
                     }
-                    await window.go.gui.App.RefreshTranslations();
                     await renderPreferences();
                 });
             } else {

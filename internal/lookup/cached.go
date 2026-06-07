@@ -163,15 +163,6 @@ func (c *CachedLookup) Translations() ([]Translation, error) {
 	return translations, nil
 }
 
-// RefreshTranslations invalidates the cached translation list so the next
-// call to Translations refetches from the inner provider. This is not part
-// of the BibleLookup interface; call it via a type assertion.
-func (c *CachedLookup) RefreshTranslations() error {
-	key := translationsKey(c.source)
-	log.Printf("cache INVALIDATE %s", key)
-	return c.cache.Delete(key)
-}
-
 func chapterKey(source, translation, book string, chapter int) string {
 	return fmt.Sprintf("v1|%s|%s|%s|%d", source, translation, strings.ToLower(book), chapter)
 }
