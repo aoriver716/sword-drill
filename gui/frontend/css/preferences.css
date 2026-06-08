@@ -201,6 +201,15 @@
     background: var(--color-bg-button-hover);
 }
 
+.prefs-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.prefs-btn:hover:disabled {
+    background: var(--color-bg-button);
+}
+
 .prefs-btn-primary {
     background: var(--color-accent);
     color: var(--color-bg);
