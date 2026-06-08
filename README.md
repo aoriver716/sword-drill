@@ -54,16 +54,23 @@ xcode-select --install
 wails build
 ```
 
-To embed an [API.Bible](https://scripture.api.bible) key at compile time:
+To embed API keys at compile time (enables additional translations):
 ```sh
-wails build -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=YOUR_KEY"
+wails build -ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.apiKey=YOUR_API_BIBLE_KEY -X github.com/aoriver716/sword-drill/internal/lookup.esvAPIKey=YOUR_ESV_KEY"
 ```
 
-### API.Bible Setup
+> 💡 If no API keys are provided, the app automatically falls back to [bible-api.com](https://bible-api.com) which is free and requires no key. This is great for local development. To explicitly disable the free API, pass `-X github.com/aoriver716/sword-drill/internal/lookup.disableFreeAPI=1`.
 
-Official releases come pre-compiled with an API.Bible key — no setup needed.
+### API Keys
 
-If you're building from source and want to use API.Bible, sign up at [api.bible/sign-up](https://api.bible/sign-up) for a free API key, then build with the `-ldflags` flag shown above.
+Official releases come pre-compiled with API keys — no setup needed.
+
+If you're building from source and want access to all translations:
+
+| Provider | Sign Up | ldflags Variable |
+|----------|---------|-----------------|
+| [API.Bible](https://scripture.api.bible) (2,500+ translations) | [api.bible/sign-up](https://api.bible/sign-up) | `internal/lookup.apiKey` |
+| [ESV API](https://api.esv.org) (English Standard Version) | [api.esv.org/account/create-application](https://api.esv.org/account/create-application) | `internal/lookup.esvAPIKey` |
 
 ## License
 
