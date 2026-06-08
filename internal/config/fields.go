@@ -34,12 +34,12 @@ func RegisterFields(r *Registry) {
 
 	r.RegisterProvider(LookupProvider{
 		Key:                "bible-api.com",
-		Label:              "bible-api.com",
+		Label:              "bible-api.com (free, no key required)",
 		DefaultTranslation: "kjv",
 		Factory: func(cfg *Config) lookup.BibleLookup {
 			return lookup.NewBibleAPIClient()
 		},
-		Available: func() bool { return false }, // disabled; kept for future use
+		Available: lookup.FreeAPIEnabled,
 	})
 
 	r.RegisterProvider(LookupProvider{

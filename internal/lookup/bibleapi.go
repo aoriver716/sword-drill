@@ -12,6 +12,17 @@ import (
 	"github.com/aoriver716/sword-drill/internal/detector"
 )
 
+// disableFreeAPI is set at compile time to disable the free bible-api.com provider.
+//
+//	-ldflags "-X github.com/aoriver716/sword-drill/internal/lookup.disableFreeAPI=1"
+var disableFreeAPI string
+
+// FreeAPIEnabled returns true if the free bible-api.com provider is available.
+// It is enabled by default and only disabled when disableFreeAPI is set at build time.
+func FreeAPIEnabled() bool {
+	return disableFreeAPI == ""
+}
+
 // BibleAPIClient implements BibleLookup using bible-api.com.
 type BibleAPIClient struct {
 	BaseURL    string
