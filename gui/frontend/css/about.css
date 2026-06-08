@@ -13,11 +13,19 @@
 .about-title {
     font-weight: 600;
     font-size: 15px;
+    user-select: none;
 }
 
 .about-body {
     padding: 20px 18px;
     text-align: center;
+    user-select: none;
+}
+
+.about-blurb {
+    margin-bottom: 12px;
+    font-size: 14px;
+    color: var(--color-text);
 }
 
 .about-author {
