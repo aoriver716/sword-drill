@@ -1,6 +1,7 @@
 // preferences.js — Preferences dialog rendering and control creation.
 import { translationOptions } from "./translations.js";
 import { checkAndShowBanner } from "./about.js";
+import { closeAllDialogs } from "./dialogs.js";
 
 const prefsDialog = document.getElementById("prefs-dialog");
 const prefsBackdrop = document.getElementById("prefs-backdrop");
@@ -84,6 +85,7 @@ async function applyPendingChanges() {
 }
 
 export async function openPreferences() {
+    closeAllDialogs();
     pendingChanges = {};
     restartRequired = false;
     updateRestartNotice();

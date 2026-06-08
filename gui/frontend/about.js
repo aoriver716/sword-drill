@@ -1,5 +1,7 @@
 // about.js — About dialog and update checking logic.
 
+import { closeAllDialogs } from "./dialogs.js";
+
 const aboutDialog = document.getElementById("about-dialog");
 const aboutBackdrop = document.getElementById("about-backdrop");
 const aboutClose = document.getElementById("about-close");
@@ -19,6 +21,7 @@ function closeDialog() {
 }
 
 export function openAbout() {
+    closeAllDialogs();
     window.go.gui.App.GetVersion().then((version) => {
         aboutVersionText.textContent = version;
     });

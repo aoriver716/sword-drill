@@ -1,5 +1,7 @@
 // report.js — Report a Problem dialog logic.
 
+import { closeAllDialogs } from "./dialogs.js";
+
 const reportDialog = document.getElementById("report-dialog");
 const reportBackdrop = document.getElementById("report-backdrop");
 const reportClose = document.getElementById("report-close");
@@ -17,6 +19,7 @@ function closeDialog() {
 }
 
 export function openReportProblem() {
+    closeAllDialogs();
     openDialog();
 }
 
