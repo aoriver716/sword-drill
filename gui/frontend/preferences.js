@@ -50,6 +50,7 @@ document.getElementById("prefs-reset").addEventListener("click", async () => {
     const originalText = btn.textContent;
     pendingChanges = {};
     btn.disabled = true;
+    btn.textContent = "Resetting…";
     await window.go.gui.App.ResetConfigToDefaults();
     await renderPreferences();
     btn.textContent = "✓ Defaults restored";
