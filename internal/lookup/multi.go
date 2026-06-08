@@ -73,16 +73,6 @@ func (m *MultiClient) Translations() ([]Translation, error) {
 	return all, nil
 }
 
-// RefreshTranslations refreshes all providers' translation lists.
-func (m *MultiClient) RefreshTranslations() error {
-	for _, client := range m.providers {
-		if r, ok := client.(interface{ RefreshTranslations() error }); ok {
-			_ = r.RefreshTranslations()
-		}
-	}
-	return nil
-}
-
 // splitTranslationKey splits a "provider/key" translation into its parts.
 // If no "/" is found, the whole string is treated as the inner key with an
 // empty provider (for backwards compatibility).

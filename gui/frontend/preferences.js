@@ -46,10 +46,20 @@ document.getElementById("prefs-apply").addEventListener("click", async () => {
 });
 
 document.getElementById("prefs-reset").addEventListener("click", async () => {
+    const btn = document.getElementById("prefs-reset");
+    const originalText = btn.textContent;
     pendingChanges = {};
+    btn.disabled = true;
+    btn.textContent = "Resetting…";
     await window.go.gui.App.ResetConfigToDefaults();
-    await window.go.gui.App.RefreshTranslations();
     await renderPreferences();
+    btn.textContent = "✓ Defaults restored";
+    btn.classList.add("prefs-btn-success");
+    setTimeout(() => {
+        btn.textContent = originalText;
+        btn.classList.remove("prefs-btn-success");
+        btn.disabled = false;
+    }, 3000);
 });
 
 prefsBackdrop.addEventListener("click", () => {
@@ -129,11 +139,6 @@ async function renderPreferences() {
             if (control) fieldDiv.appendChild(control);
 
             groupDiv.appendChild(fieldDiv);
-
-            // Append status element below the field for button widgets
-            if (control && control._statusElement) {
-                groupDiv.appendChild(control._statusElement);
-            }
         }
 
         prefsBody.appendChild(groupDiv);
@@ -192,7 +197,6 @@ function createControl(field) {
                         restartRequired = true;
                         updateRestartNotice();
                     }
-                    await window.go.gui.App.RefreshTranslations();
                     await renderPreferences();
                 });
             } else {
@@ -230,33 +234,29 @@ function createControl(field) {
             btn.type = "button";
             btn.textContent = field.label;
 
-            const status = document.createElement("div");
-            status.className = "prefs-button-status";
-
             btn.addEventListener("click", async () => {
+                const originalText = btn.textContent;
                 btn.disabled = true;
-                status.textContent = "";
                 try {
                     const msg = await window.go.gui.App.InvokeFieldAction(field.key);
-                    status.textContent = "✓ " + (msg || "Done");
-                    status.classList.add("success");
+                    btn.textContent = "✓ " + (msg || "Done");
+                    btn.classList.add("prefs-btn-success");
                     setTimeout(() => {
-                        status.textContent = "";
-                        status.classList.remove("success");
+                        btn.textContent = originalText;
+                        btn.classList.remove("prefs-btn-success");
+                        btn.disabled = false;
                     }, 3000);
                 } catch (e) {
-                    status.textContent = "✗ " + (e.message || "Failed");
-                    status.classList.add("error");
+                    btn.textContent = "✗ " + (e.message || "Failed");
+                    btn.classList.add("prefs-btn-error");
                     setTimeout(() => {
-                        status.textContent = "";
-                        status.classList.remove("error");
+                        btn.textContent = originalText;
+                        btn.classList.remove("prefs-btn-error");
+                        btn.disabled = false;
                     }, 3000);
-                } finally {
-                    btn.disabled = false;
                 }
             });
 
-            btn._statusElement = status;
             return btn;
         }
         default:

@@ -107,15 +107,6 @@ func (a *App) ResetConfigToDefaults() error {
 	return a.registry.ResetToDefaults()
 }
 
-// RefreshTranslations invalidates any cached translation lists so the next
-// call refetches from all providers.
-func (a *App) RefreshTranslations() error {
-	if a.registry == nil {
-		return nil
-	}
-	multi := a.registry.MultiLookup()
-	return multi.RefreshTranslations()
-}
 
 // InvokeFieldAction triggers the Action callback associated with a config
 // field (used by button-type widgets such as "Clear Scripture Cache").

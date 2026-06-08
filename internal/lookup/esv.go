@@ -194,8 +194,3 @@ func (c *ESVClient) Translations() ([]Translation, error) {
 		{Name: "English Standard Version", Key: "esv"},
 	}, nil
 }
-
-// RefreshTranslations is a no-op for the ESV API (only one translation available).
-func (c *ESVClient) RefreshTranslations() error {
-	return nil
-}

@@ -29,8 +29,6 @@ func (m *mockClient) Translations() ([]Translation, error) {
 	}, nil
 }
 
-func (m *mockClient) RefreshTranslations() error { return nil }
-
 func TestMultiClient_Translations(t *testing.T) {
 	mc := NewMultiClient()
 	mc.AddProvider("provider-a", "Provider A", &mockClient{})
