@@ -9,7 +9,7 @@ Don't you hate it when you're reading a great article and the author drops a scr
 - **Clipboard Detection** — Automatically detects scripture references (e.g. `John 3:16`, `Gen. 1:1`, `Rom 8:28-30`) when you copy text.
 - **Scripture Browser** — Navigate and read scripture in context with tabbed browsing.
 - **Scripture Log** — Scrollable log of all detected references.
-- **Multiple Bible APIs** — Supports [bible-api.com](https://bible-api.com) and [API.Bible](https://scripture.api.bible) (2,500+ translations).
+- **Multiple Bible APIs** — Supports [API.Bible](https://scripture.api.bible) (2,500+ translations) and the [ESV](https://api.esv.org/) API in official builds. Also supports [bible-api.com](https://bible-api.com) for private builds.
 - **Cross-platform** — Fully supported on Windows and macOS.
 
 ## Download
