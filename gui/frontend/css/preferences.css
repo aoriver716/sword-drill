@@ -165,25 +165,6 @@
     cursor: progress;
 }
 
-.prefs-button-status {
-    font-size: var(--font-size-sm);
-    text-align: right;
-    padding: 2px 0 4px;
-    min-height: 1.2em;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
-
-.prefs-button-status.success {
-    color: #2e7d32;
-    opacity: 1;
-}
-
-.prefs-button-status.error {
-    color: #c62828;
-    opacity: 1;
-}
-
 .prefs-footer {
     display: flex;
     justify-content: space-between;
@@ -204,18 +185,6 @@
 .prefs-footer-right {
     display: flex;
     gap: 8px;
-}
-
-.prefs-reset-status {
-    font-size: var(--font-size-sm);
-    user-select: none;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
-
-.prefs-reset-status.success {
-    color: #2e7d32;
-    opacity: 1;
 }
 
 .prefs-btn {
@@ -240,4 +209,20 @@
 
 .prefs-btn-primary:hover {
     background: var(--color-accent-hover);
+}
+
+.prefs-btn-success,
+.prefs-btn-success:hover,
+.prefs-button.prefs-btn-success,
+.prefs-button.prefs-btn-success:hover:not(:disabled) {
+    color: #2e7d32;
+    border-color: #2e7d32;
+}
+
+.prefs-btn-error,
+.prefs-btn-error:hover,
+.prefs-button.prefs-btn-error,
+.prefs-button.prefs-btn-error:hover:not(:disabled) {
+    color: #c62828;
+    border-color: #c62828;
 }
